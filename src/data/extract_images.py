@@ -3,24 +3,36 @@ import shutil
 from py7zr import unpack_7zarchive
 import shutil
 from sklearn.model_selection import train_test_split
-from tqdm import tqdm
 import argparse
-import py7zr
+import subprocess
 
 shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
 
 
+def unpack_7z(archive_path, destination_path):
+    try:
+        subprocess.run(['7z', 'x', archive_path, '-o' + destination_path], check=True)
+        print("Archive unpacked successfully.")
+    except subprocess.CalledProcessError as e:
+        print("Error:", e)
+
 def extract_images(zip_path, extract_to):
-   # shutil.unpack_archive(zip_path, "tmp")
-    src = os.path.join(os.path.join("tmp", 'ZooScan77'), "Images")
+    # Unpack the 7z archive
+    #unpack_7z(zip_path, "tmp")
+    
+    # Source directory for extracted images
+    src = os.path.join(os.path.join("tmp", 'ZooScan77'), "images")
+    
+    # Destination directory
     dst = os.path.join(extract_to, 'ZooScan77')
-    i=0
+    
+    # Iterate through each item in the source directory
     for item in os.listdir(src):
-        print(f"{i}: {item}")
-        i += 1
-        s = os.path.join(src, item)
-        d = os.path.join(dst, item)
-        shutil.move(s, d) #TODO
+        s = os.path.join(src, item)  # Source path
+        d = os.path.join(dst, item)  # Destination path
+        shutil.move(s, d)  # Move the item to the destination directory
+    
+    # Remove the temporary source directory
     shutil.rmtree(src)
 
 def split_data(base_directory):
