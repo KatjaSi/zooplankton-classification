@@ -20,7 +20,7 @@ def extract_images(zip_path, extract_to):
         i += 1
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
-        shutil.move(s, d)
+        shutil.move(s, d) #TODO
     shutil.rmtree(src)
 
 def split_data(base_directory):
