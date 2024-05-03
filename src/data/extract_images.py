@@ -11,10 +11,13 @@ shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
 
 
 def extract_images(zip_path, extract_to):
-    shutil.unpack_archive(zip_path, extract_to)
-    src = os.path.join(extract_to, 'ZooScan77', 'Images') 
+   # shutil.unpack_archive(zip_path, "tmp")
+    src = os.path.join(os.path.join("tmp", 'ZooScan77'), "Images")
     dst = os.path.join(extract_to, 'ZooScan77')
+    i=0
     for item in os.listdir(src):
+        print(f"{i}: {item}")
+        i += 1
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
         shutil.move(s, d)
@@ -46,7 +49,7 @@ def move_files(filenames, labels, dirname, base_dir, target_base_dir):
 def main(zip_file_path, target_base_dir):
     print(f"Extracting images from {zip_file_path} to {target_base_dir}")
     extract_images(zip_file_path, target_base_dir)
-
+    print("Done Extracting images")
     train_filenames, train_labels, val_filenames, val_labels, test_filenames, test_labels = split_data(target_base_dir)
     # Copy files to respective directories
     move_files(train_filenames, train_labels, 'train', target_base_dir, os.path.join(target_base_dir, "ZooScan77"))
