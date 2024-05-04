@@ -9,8 +9,16 @@ To extract images from the `.7z` archive:
 python src/data/extract_images.py --zip_file_path=<path_to_zip_file>
 ```
 
-## Printing class statistics
+## Printing statistics
+
+#### class statistics
 
 ```bash
-python src/data/data_statistics.py detritus
+python src/data/data_statistics.py --class_name detritus
+```
+
+#### category statistics
+
+```bash
+python src/data/data_statistics.py --category_name COP
 ```
