@@ -17,22 +17,15 @@ def unpack_7z(archive_path, destination_path):
         print("Error:", e)
 
 def extract_images(zip_path, extract_to):
-    # Unpack the 7z archive
-    #unpack_7z(zip_path, "tmp")
-    
-    # Source directory for extracted images
     src = os.path.join(os.path.join("tmp", 'ZooScan77'), "images")
     
-    # Destination directory
     dst = os.path.join(extract_to, 'ZooScan77')
-    
-    # Iterate through each item in the source directory
+
     for item in os.listdir(src):
-        s = os.path.join(src, item)  # Source path
-        d = os.path.join(dst, item)  # Destination path
-        shutil.move(s, d)  # Move the item to the destination directory
-    
-    # Remove the temporary source directory
+        s = os.path.join(src, item)  
+        d = os.path.join(dst, item)  
+        shutil.move(s, d)
+
     shutil.rmtree(src)
 
 def split_data(base_directory):
