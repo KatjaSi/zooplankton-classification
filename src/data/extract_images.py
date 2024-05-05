@@ -5,6 +5,7 @@ import shutil
 from sklearn.model_selection import train_test_split
 import argparse
 import subprocess
+import random
 
 shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
 
@@ -17,6 +18,7 @@ def unpack_7z(archive_path, destination_path):
         print("Error:", e)
 
 def extract_images(zip_path, extract_to):
+    unpack_7z(zip_path, "tmp")
     src = os.path.join(os.path.join("tmp", 'ZooScan77'), "images")
     
     dst = os.path.join(extract_to, 'ZooScan77')
@@ -25,6 +27,7 @@ def extract_images(zip_path, extract_to):
         s = os.path.join(src, item)  
         d = os.path.join(dst, item)  
         shutil.move(s, d)
+        random.shuffle(os.listdir(d))
 
     shutil.rmtree(src)
 
@@ -56,7 +59,6 @@ def main(zip_file_path, target_base_dir):
     extract_images(zip_file_path, target_base_dir)
     print("Done Extracting images")
     train_filenames, train_labels, val_filenames, val_labels, test_filenames, test_labels = split_data(target_base_dir)
-    # Copy files to respective directories
     move_files(train_filenames, train_labels, 'train', target_base_dir, os.path.join(target_base_dir, "ZooScan77"))
     move_files(val_filenames, val_labels, 'val', target_base_dir, os.path.join(target_base_dir, "ZooScan77"))
     move_files(test_filenames, test_labels, 'test', target_base_dir, os.path.join(target_base_dir, "ZooScan77"))
