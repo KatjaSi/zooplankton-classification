@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-#import torch.nn.functional as F
+import cv2
 import torchvision.transforms.functional as F
 from torch.utils.data import DataLoader, Dataset
 import torchvision
@@ -11,8 +11,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
+
+def apply_clahe(img):
+    img_np = img.numpy().squeeze() * 255.0  
+    img_np = img_np.astype('uint8')  
+    clahe = cv2.createCLAHE()
+    img_clahe = clahe.apply(img_np)
+    img_clahe = torch.from_numpy(img_clahe).float() / 255.0
+    if img.dim() > 2 and img.size(0) == 1:
+        img_clahe = img_clahe.unsqueeze(0)
+
+    return img_clahe
+
 def resize_and_pad(img, size=224, fill=0, padding_mode='constant'):
-    # Calculate the aspect ratio and determine the scaling factor
     aspect_ratio = img.width / img.height
     if img.width > img.height:
         new_width = size
@@ -36,24 +47,27 @@ def resize_and_pad(img, size=224, fill=0, padding_mode='constant'):
 
 
 
+
 if __name__ == "__main__":
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda")
 
     in_channels = 1
     num_classes = 77
     learing_rate = 1e-3
-    batch_size = 16
+    batch_size = 64
     num_epochs = 1
 
     transform = transforms.Compose([
-        transforms.Lambda(lambda img: resize_and_pad(img)), 
+        transforms.RandomHorizontalFlip(),
+        transforms.Lambda(lambda img: resize_and_pad(img)),  
         transforms.ToTensor(),
+       # transforms.Lambda(apply_clahe),
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
-    train_dataset = ImageFolder(root='datasets/ZooScan77/train', transform=transform)
-    val_dataset = ImageFolder(root='datasets/ZooScan77/val')
-    test_dataset  = ImageFolder(root='datasets/ZooScan77/test')
+    train_dataset = ImageFolder(root='datasets/ZooScan77_small/train', transform=transform)
+    val_dataset = ImageFolder(root='datasets/ZooScan77_small/val')
+    test_dataset  = ImageFolder(root='datasets/ZooScan77_small/test')
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
@@ -73,23 +87,21 @@ if __name__ == "__main__":
 
 
     
-    for epoch in range(1):  # loop over the dataset multiple times
-
+    for epoch in range(10): 
+        
         running_loss = 0.0
+        count = 0.0
+        model.train()
         for data in train_loader:
-
             inputs, labels = data
-            # zero the parameter gradients
             optimizer.zero_grad()
-
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-
-            # print statistics
             running_loss += loss.item()
-            print(loss.item())
+        
+        print(loss.item())
 
 
     print('Finished Training')
