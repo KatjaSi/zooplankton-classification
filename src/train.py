@@ -54,9 +54,9 @@ if __name__ == "__main__":
 
     in_channels = 1
     num_classes = 77
-    learing_rate = 1e-3
+    learing_rate = 5e-4
     batch_size = 64
-    num_epochs = 1
+    num_epochs = 100
 
     transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
@@ -74,34 +74,27 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 
-    model = torchvision.models.vgg16(weights=None)
+    model = torchvision.models.vgg16(weights=True)
     model.classifier[-1] = nn.Linear(in_features=4096, out_features=77)
-
+    model = model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(params=model.parameters(), lr=learing_rate)
-
-
-    dataiter = iter(train_loader)
-    images, labels = next(dataiter)
-    image = images[1].detach().numpy()
-
-
     
-    for epoch in range(10): 
+    for epoch in range(num_epochs): 
         
         running_loss = 0.0
         count = 0.0
         model.train()
-        for data in train_loader:
-            inputs, labels = data
+        for data, labels in (train_loader):
+            data = data.to(device)
+            labels = labels.to(device)
             optimizer.zero_grad()
-            outputs = model(inputs)
+            outputs = model(data)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-        
-        print(loss.item())
+        print(f"Epoch {epoch+1}, Train loss: {loss.item()}")
 
 
     print('Finished Training')
