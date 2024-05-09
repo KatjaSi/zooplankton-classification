@@ -2,4 +2,4 @@
 venv/
 datasets/
 tmp/
-src/data/show_random_images.py
+src/data/*
