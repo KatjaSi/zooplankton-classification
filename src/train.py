@@ -7,9 +7,9 @@ from torch.utils.data import DataLoader, Dataset
 import torchvision
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
-import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
+import sklearn.metrics as metrics
 
 
 def apply_clahe(img):
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     in_channels = 1
     num_classes = 77
-    learing_rate = 5e-4
+    learning_rate = 5e-4
     batch_size = 64
     num_epochs = 100
 
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
     train_dataset = ImageFolder(root='datasets/ZooScan77_small/train', transform=transform)
-    val_dataset = ImageFolder(root='datasets/ZooScan77_small/val')
+    val_dataset = ImageFolder(root='datasets/ZooScan77_small/val', transform=transform)
     test_dataset  = ImageFolder(root='datasets/ZooScan77_small/test')
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -78,14 +78,17 @@ if __name__ == "__main__":
     model.classifier[-1] = nn.Linear(in_features=4096, out_features=77)
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(params=model.parameters(), lr=learing_rate)
+    optimizer = optim.Adam(params=model.parameters(), lr=learning_rate)
     
-    for epoch in range(num_epochs): 
-        
+    for epoch in range(num_epochs):  
         running_loss = 0.0
         count = 0.0
         model.train()
+
+        train_pred = []
+        train_true = []
         for data, labels in (train_loader):
+            batch_size = len(labels)
             data = data.to(device)
             labels = labels.to(device)
             optimizer.zero_grad()
@@ -93,8 +96,51 @@ if __name__ == "__main__":
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            running_loss += loss.item()
-        print(f"Epoch {epoch+1}, Train loss: {loss.item()}")
+            preds = outputs.max(dim=1)[1]
+
+            count += batch_size
+            running_loss += loss.item() * batch_size
+
+            train_true.append(labels.cpu().numpy())
+            train_pred.append(preds.detach().cpu().numpy())
+
+        train_true = np.concatenate(train_true)
+        train_pred = np.concatenate(train_pred)
+        accuracy = metrics.accuracy_score(train_true, train_pred)
+        balanced_accuracy = metrics.balanced_accuracy_score(train_true, train_pred)
+        print(f"Epoch {epoch+1}, \
+            Train loss: {running_loss*1.0/count}, \
+            train accuracy: {accuracy:.6f},\
+            balanced train accuracy: {balanced_accuracy:.6f}")
+
+        
+        ### validation ###
+        val_loss = 0.0
+        count = 0.0
+        model.eval()
+        val_pred = []
+        val_true = []
+
+        for data, labels in (val_loader):
+            batch_size = len(labels)
+            data = data.to(device)
+            labels = labels.to(device)
+            outputs = model(data)
+            loss = criterion(outputs, labels)
+            preds = outputs.max(dim=1)[1]
+            count += batch_size
+            val_loss += loss.item() * batch_size
+            val_true.append(labels.cpu().numpy())
+            val_pred.append(preds.detach().cpu().numpy())
+
+        val_true = np.concatenate(val_true)
+        val_pred = np.concatenate(val_pred)
+        accuracy = metrics.accuracy_score(val_true, val_pred)
+        balanced_accuracy = metrics.balanced_accuracy_score(val_true, val_pred)
+        print(f"Epoch {epoch+1}, \
+            Valid loss: {val_loss*1.0/count}, \
+            valid accuracy: {accuracy:.6f},\
+            balanced valid accuracy: {balanced_accuracy:.6f}\n")
 
 
     print('Finished Training')
