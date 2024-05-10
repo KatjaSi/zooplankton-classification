@@ -1,15 +1,20 @@
 num_classes: 77
 
-learning_rate: 0.00005
 batch_size: 64
 num_epochs: 100
 
 model:
-  name: resnet50 #"vgg16"
+  name: resnet50
   pretrained: true
+
+optimizer:
+  type: "Adam"  # or "SGD"
+  lr: 0.00005
 
 reports:
   enable: true
   frequency: 1
   types:
     confusion_matrix: true
+
+dataset: ZooScan77_small
