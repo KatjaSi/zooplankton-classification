@@ -1,16 +1,34 @@
+import yaml
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import cv2
 import torchvision.transforms.functional as F
-from torch.utils.data import DataLoader, Dataset
 import torchvision
 import torchvision.transforms as transforms
-from torchvision.datasets import ImageFolder
 import numpy as np
-from PIL import Image
 import sklearn.metrics as metrics
+import matplotlib.pyplot as plt
+import shutil
+import os
+import seaborn as sns
+from torch.utils.data import DataLoader, Dataset
+from torchvision.datasets import ImageFolder
+from PIL import Image
 
+
+def plot_confusion_matrix(cm, class_names, epoch, save_path):
+    plt.figure(figsize=(60, 60))
+    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    sns.heatmap(cm_normalized, annot=True, fmt=".2f", cmap='coolwarm',
+                xticklabels=class_names, yticklabels=class_names,
+                cbar_kws={'label': 'Fraction'})
+
+    plt.title(f'Confusion Matrix at Epoch {epoch + 1}')
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
+    plt.savefig(f"{save_path}/epoch_{epoch + 1}_confusion_matrix.png")
+    plt.close()
 
 def apply_clahe(img):
     img_np = img.numpy().squeeze() * 255.0  
@@ -45,28 +63,54 @@ def resize_and_pad(img, size=224, fill=0, padding_mode='constant'):
     img = F.pad(img, padding=(padding_left, padding_top, padding_right, padding_bottom), fill=fill, padding_mode=padding_mode)
     return img
 
-
-
+def get_model(model_config, num_classes):
+    if model_config['name'] == 'vgg16':
+        model = torchvision.models.vgg16(weights=model_config['pretrained'])
+        model.classifier[-1] = nn.Linear(in_features=4096, out_features=num_classes)
+    elif model_config['name'] == 'resnet50':
+        model = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT if model_config['pretrained'] else None)
+        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
+    else:
+        raise ValueError(f"Unsupported model name: {model_name}")
+    return model
 
 if __name__ == "__main__":
 
+    with open('src/config.yaml', 'r') as file:
+        config = yaml.safe_load(file)
+
     device = torch.device("cuda")
 
-    in_channels = 1
-    num_classes = 77
-    learning_rate = 5e-4
-    batch_size = 64
-    num_epochs = 100
+    graph_path = 'graphs'
+    if os.path.exists(graph_path):
+        shutil.rmtree(graph_path)
+    os.makedirs(graph_path)
 
-    transform = transforms.Compose([
+    in_channels = 1
+    num_classes = config['num_classes']
+    learning_rate = config['learning_rate']
+    batch_size = config['batch_size']
+    num_epochs = config['num_epochs']
+    report_config = config['reports']
+
+
+    train_transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.Lambda(lambda img: resize_and_pad(img)),  
         transforms.ToTensor(),
        # transforms.Lambda(apply_clahe),
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
-    train_dataset = ImageFolder(root='datasets/ZooScan77_small/train', transform=transform)
-    val_dataset = ImageFolder(root='datasets/ZooScan77_small/val', transform=transform)
+
+    val_transform = transforms.Compose([
+        transforms.Lambda(lambda img: resize_and_pad(img)),  
+        transforms.ToTensor(),
+       # transforms.Lambda(apply_clahe),
+        transforms.Normalize(mean=[0.5], std=[0.5])
+    ])
+
+    train_dataset = ImageFolder(root='datasets/ZooScan77_small/train', transform=train_transform)
+    val_dataset = ImageFolder(root='datasets/ZooScan77_small/val', transform=val_transform)
     test_dataset  = ImageFolder(root='datasets/ZooScan77_small/test')
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -74,9 +118,8 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 
-    model = torchvision.models.vgg16(weights=True)
-    model.classifier[-1] = nn.Linear(in_features=4096, out_features=77)
-    model = model.to(device)
+    model = get_model(config['model'], num_classes).to(device)
+
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(params=model.parameters(), lr=learning_rate)
     
@@ -137,6 +180,13 @@ if __name__ == "__main__":
         val_pred = np.concatenate(val_pred)
         accuracy = metrics.accuracy_score(val_true, val_pred)
         balanced_accuracy = metrics.balanced_accuracy_score(val_true, val_pred)
+
+        if report_config['enable'] and (epoch + 1) % report_config['frequency'] == 0:
+            if report_config['types']['confusion_matrix']:
+                cm = metrics.confusion_matrix(val_true, val_pred)
+                class_names = val_dataset.classes
+                plot_confusion_matrix(cm, class_names, epoch, graph_path)
+        
         print(f"Epoch {epoch+1}, \
             Valid loss: {val_loss*1.0/count}, \
             valid accuracy: {accuracy:.6f},\

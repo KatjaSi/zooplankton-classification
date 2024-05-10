@@ -1,0 +1,15 @@
+num_classes: 77
+
+learning_rate: 0.00005
+batch_size: 64
+num_epochs: 100
+
+model:
+  name: resnet50 #"vgg16"
+  pretrained: true
+
+reports:
+  enable: true
+  frequency: 1
+  types:
+    confusion_matrix: true
