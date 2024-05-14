@@ -5,3 +5,6 @@ tmp/
 src/data/*
 graphs/
 src/__pycache__/
+COP6_Caligidae/
+
+temp.py

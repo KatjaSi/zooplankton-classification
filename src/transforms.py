@@ -15,7 +15,7 @@ def apply_clahe(img):
 
     return img_clahe
 
-def resize_and_pad(img, size=224, fill=0, padding_mode='constant'):
+def resize_and_pad(img, size=224, fill=1, padding_mode='constant'):
     aspect_ratio = img.width / img.height
     if img.width > img.height:
         new_width = size
@@ -25,6 +25,7 @@ def resize_and_pad(img, size=224, fill=0, padding_mode='constant'):
         new_width = int(new_height * aspect_ratio)
 
     img = img.resize((new_width, new_height), Image.BILINEAR)
+   
 
     # Calculate padding to make the image square
     padding_left = (size - new_width) // 2

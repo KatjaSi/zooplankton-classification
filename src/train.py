@@ -8,7 +8,7 @@ import shutil
 import os
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
-
+from torch.utils.data import WeightedRandomSampler
 from plots import plot_confusion_matrix
 from parser import Parser
 from transforms import apply_clahe, resize_and_pad
@@ -16,7 +16,6 @@ from transforms import apply_clahe, resize_and_pad
 import torch.optim as optim
 
 import os
-os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 
 
@@ -39,20 +38,31 @@ if __name__ == "__main__":
     is_enable_report = parser.is_enable_report() 
     report_frequency = parser.get_report_frequency()
     is_enable_confusion_matrix = parser.is_enable_confusion_matrix()
+    num_workers = parser.get_num_workers()
 
 
     train_transform = transforms.Compose([
+       # transforms.Resize(256),
+       # transforms.CenterCrop(224),
         transforms.RandomHorizontalFlip(),
+       # transforms.RandomRotation(180),
         transforms.Lambda(lambda img: resize_and_pad(img)),  
+        transforms.RandomAffine(180, (0.1, 0.1)),
         transforms.ToTensor(),
-       # transforms.Lambda(apply_clahe),
+        #transforms.Grayscale(num_output_channels=1),
+        #transforms.Lambda(apply_clahe),
+        #transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
 
     val_transform = transforms.Compose([
         transforms.Lambda(lambda img: resize_and_pad(img)),  
+       # transforms.Resize(256),
+       # transforms.CenterCrop(224),
         transforms.ToTensor(),
+        #transforms.Grayscale(num_output_channels=1),
        # transforms.Lambda(apply_clahe),
+        #transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
 
@@ -60,15 +70,26 @@ if __name__ == "__main__":
     val_dataset = ImageFolder(root=f"datasets/{dataset}/val", transform=val_transform)
     test_dataset  = ImageFolder(root=f"datasets/{dataset}/test")
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    # weighted random sampler
+    train_labels = np.array(train_dataset.targets)
+    class_counts = np.bincount(train_labels)
+    class_weights = 1. / class_counts
+    # Apply weights to each sample
+    weights = class_weights[train_labels]
+    sampler = WeightedRandomSampler(weights, len(weights))
+    
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
 
     model = parser.get_model().to(device)
-
+    model = nn.DataParallel(model) 
     criterion = nn.CrossEntropyLoss()
-    optimizer = parser.get_optimizer(model) #optim.Adam(params=model.parameters(), lr=0.0005)
+    optimizer = parser.get_optimizer(model) 
+    scheduler = parser.get_scheduler(optimizer)
     
     for epoch in range(num_epochs):  
         running_loss = 0.0
@@ -93,6 +114,9 @@ if __name__ == "__main__":
 
             train_true.append(labels.cpu().numpy())
             train_pred.append(preds.detach().cpu().numpy())
+
+        if parser.is_enable_scheduler():
+            scheduler.step()
 
         train_true = np.concatenate(train_true)
         train_pred = np.concatenate(train_pred)

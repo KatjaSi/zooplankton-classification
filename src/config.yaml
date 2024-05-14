@@ -1,15 +1,24 @@
 num_classes: 77
+num_workers: 4
 
-batch_size: 64
+batch_size: 256
 num_epochs: 100
 
 model:
   name: resnet50
   pretrained: true
+  fine_tune: true  # If true, fine-tune the entire model; if false, freeze earlier layers
+  freeze_until: none  # Options could be "all", "none", or specific layer like "layer4"
 
 optimizer:
   type: "Adam"  # or "SGD"
   lr: 0.00005
+
+scheduler:
+  enable: true
+  type: "CosineAnnealingLR"
+  T_max: 100  # Number of epochs before first restart
+  eta_min: 0.000001  # Minimum lr
 
 reports:
   enable: true
@@ -17,4 +26,4 @@ reports:
   types:
     confusion_matrix: true
 
-dataset: ZooScan77_small
+dataset: ZooScan77
