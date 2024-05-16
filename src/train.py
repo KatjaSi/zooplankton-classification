@@ -37,12 +37,19 @@ if __name__ == "__main__":
     num_workers = parser.get_num_workers()
 
     graph_path = os.path.join('graphs', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d %H:%M'))
+
     if os.path.exists(graph_path):
         shutil.rmtree(graph_path)
     os.makedirs(graph_path)
 
+    if torch.cuda.is_available():
+        gpu_types = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
+    else:
+        gpu_types = []
+
     training_parameters = {
-        'num_gpus': torch.cuda.device_count()
+        'num_gpus': torch.cuda.device_count(),
+        'gpu_types': gpu_types
     }
 
     file_path = os.path.join(graph_path, 'training_parameters')
