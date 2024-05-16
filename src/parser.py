@@ -81,6 +81,9 @@ class Parser():
             assert found_layer, f"Layer named {self.freeze_until} not found in the model."
         return model
 
+    def get_model_name(self):
+        return self.model_name
+
     def get_optimizer(self, model):
         optimizer_type = self.optimizer['type']
         lr = self.optimizer['lr']

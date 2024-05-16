@@ -2,7 +2,7 @@ num_classes: 77
 num_workers: 4
 
 batch_size: 256
-num_epochs: 100
+num_epochs: 0
 
 model:
   name: resnet50

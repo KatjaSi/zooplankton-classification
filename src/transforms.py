@@ -19,10 +19,10 @@ def resize_and_pad(img, size=224, fill=1, padding_mode='constant'):
     aspect_ratio = img.width / img.height
     if img.width > img.height:
         new_width = size
-        new_height = int(new_width / aspect_ratio)
+        new_height = max(int(new_width / aspect_ratio), 1)
     else:
         new_height = size
-        new_width = int(new_height * aspect_ratio)
+        new_width = max(int(new_height * aspect_ratio), 1)
 
     img = img.resize((new_width, new_height), Image.BILINEAR)
    

@@ -6,12 +6,14 @@ import numpy as np
 import sklearn.metrics as metrics
 import shutil
 import os
+import json
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
 from torch.utils.data import WeightedRandomSampler
 from plots import plot_confusion_matrix
 from parser import Parser
 from transforms import apply_clahe, resize_and_pad
+from datetime import datetime
 
 import torch.optim as optim
 
@@ -25,12 +27,6 @@ if __name__ == "__main__":
 
     device = torch.device("cuda")
 
-    graph_path = 'graphs'
-    if os.path.exists(graph_path):
-        shutil.rmtree(graph_path)
-    os.makedirs(graph_path)
-
-    in_channels = 1
     num_classes = parser.get_num_classes()
     batch_size = parser.get_batch_size()
     num_epochs = parser.get_num_epochs()
@@ -40,14 +36,28 @@ if __name__ == "__main__":
     is_enable_confusion_matrix = parser.is_enable_confusion_matrix()
     num_workers = parser.get_num_workers()
 
+    graph_path = os.path.join('graphs', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d %H:%M'))
+    if os.path.exists(graph_path):
+        shutil.rmtree(graph_path)
+    os.makedirs(graph_path)
+
+    training_parameters = {
+        'num_gpus': torch.cuda.device_count()
+    }
+
+    file_path = os.path.join(graph_path, 'training_parameters')
+
+    with open(file_path, 'w') as json_file:
+        json.dump(training_parameters, json_file, indent=4)
+
 
     train_transform = transforms.Compose([
        # transforms.Resize(256),
        # transforms.CenterCrop(224),
         transforms.RandomHorizontalFlip(),
-       # transforms.RandomRotation(180),
+        #transforms.RandomRotation(180),
         transforms.Lambda(lambda img: resize_and_pad(img)),  
-        transforms.RandomAffine(180, (0.1, 0.1)),
+        transforms.RandomAffine(180, (0.1, 0.1)), # rotation + translation
         transforms.ToTensor(),
         #transforms.Grayscale(num_output_channels=1),
         #transforms.Lambda(apply_clahe),
