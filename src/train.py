@@ -6,12 +6,11 @@ import numpy as np
 import sklearn.metrics as metrics
 import shutil
 import os
-import json
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
 from torch.utils.data import WeightedRandomSampler
 from plots import plot_confusion_matrix
-from parser import Parser
+from parser import Parser # type: ignore
 from transforms import apply_clahe, resize_and_pad
 from datetime import datetime
 
@@ -25,7 +24,7 @@ if __name__ == "__main__":
 
     parser = Parser()
 
-    device = torch.device("cuda")
+    device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
 
     num_classes = parser.get_num_classes()
     batch_size = parser.get_batch_size()
@@ -36,27 +35,13 @@ if __name__ == "__main__":
     is_enable_confusion_matrix = parser.is_enable_confusion_matrix()
     num_workers = parser.get_num_workers()
 
-    graph_path = os.path.join('graphs', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d %H:%M'))
+    graph_path = os.path.join('graphs', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d %H-%M'))
 
     if os.path.exists(graph_path):
         shutil.rmtree(graph_path)
     os.makedirs(graph_path)
 
-    if torch.cuda.is_available():
-        gpu_types = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
-    else:
-        gpu_types = []
-
-    training_parameters = {
-        'num_gpus': torch.cuda.device_count(),
-        'gpu_types': gpu_types
-    }
-
     file_path = os.path.join(graph_path, 'training_parameters')
-
-    with open(file_path, 'w') as json_file:
-        json.dump(training_parameters, json_file, indent=4)
-
 
     train_transform = transforms.Compose([
        # transforms.Resize(256),
@@ -182,3 +167,5 @@ if __name__ == "__main__":
 
 
     print('Finished Training')
+
+    parser.save_training_parameters(file_path, num_epochs=10)

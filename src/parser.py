@@ -1,7 +1,9 @@
 import yaml
 import torchvision
+import torch
 import torch.nn as nn
 import torch.optim as optim
+import json
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 
@@ -105,3 +107,33 @@ class Parser():
 
     def is_enable_scheduler(self):
         return self.scheduler['enable']
+
+
+    def save_training_parameters(self, file_path, num_epochs=None):
+        num_gpus = 0
+        if torch.cuda.is_available():
+            num_gpus = torch.cuda.device_count()
+            gpu_types = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
+        else:
+            gpu_types = []
+        num_epochs = num_epochs if num_epochs is not None else self.num_epochs
+        model = {
+            'name': self.get_model_name(),
+            'pretrained': self.pretrained,
+            'fine_tune': self.fine_tune,
+            'freeze_until': self.freeze_until
+        }
+        training_parameters = {
+            'num_gpus': num_gpus,
+            'gpu_types': gpu_types,
+            'num_workers': self.num_workers,
+            'batch_size': self.batch_size,
+            'num_epochs': num_epochs,
+            'model': model,
+            'optimizer': self.optimizer,
+            'scheduler': self.scheduler,
+            'dataset': self.dataset
+        }
+
+        with open(file_path, 'w') as json_file:
+            json.dump(training_parameters, json_file, indent=4) # type: ignore
