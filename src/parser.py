@@ -52,6 +52,8 @@ class Parser():
     def is_enable_confusion_matrix(self):
         return self.report_config['types']['confusion_matrix']
 
+    def is_enable_stats_per_class(self):
+        return self.report_config['types']['stats_per_class']
 
     def get_model(self):
         model_name = self.model_name

@@ -1,8 +1,8 @@
 num_classes: 77
-num_workers: 4
+num_workers: 1
 
-batch_size: 256
-num_epochs: 0
+batch_size: 64
+num_epochs: 1
 
 model:
   name: resnet50
@@ -25,5 +25,6 @@ reports:
   frequency: 1
   types:
     confusion_matrix: true
+    stats_per_class: true
 
-dataset: ZooScan77
+dataset: ZooScan77_small

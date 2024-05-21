@@ -17,7 +17,7 @@ from datetime import datetime
 import torch.optim as optim
 
 import os
-
+import pandas as pd
 
 
 if __name__ == "__main__":
@@ -33,6 +33,7 @@ if __name__ == "__main__":
     is_enable_report = parser.is_enable_report() 
     report_frequency = parser.get_report_frequency()
     is_enable_confusion_matrix = parser.is_enable_confusion_matrix()
+    is_enable_stats_per_class = parser.is_enable_stats_per_class()
     num_workers = parser.get_num_workers()
 
     graph_path = os.path.join('graphs', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d %H-%M'))
@@ -41,7 +42,12 @@ if __name__ == "__main__":
         shutil.rmtree(graph_path)
     os.makedirs(graph_path)
 
-    file_path = os.path.join(graph_path, 'training_parameters')
+    training_parameters_path = os.path.join(graph_path, 'training_parameters')
+    stats_df_path = os.path.join(graph_path, 'stats_df.csv')
+
+    if is_enable_stats_per_class:
+        columns = ["Epoch", "Class ID", "Recall"]
+        stats_df = pd.DataFrame(columns=columns)
 
     train_transform = transforms.Compose([
        # transforms.Resize(256),
@@ -159,6 +165,19 @@ if __name__ == "__main__":
                 cm = metrics.confusion_matrix(val_true, val_pred)
                 class_names = val_dataset.classes
                 plot_confusion_matrix(cm, class_names, epoch, graph_path)
+            if is_enable_stats_per_class:
+                recall_per_class = metrics.recall_score(val_true, val_pred, average=None)
+                epoch_df = pd.DataFrame({
+                    "Epoch": epoch + 1,
+                    "Class ID": range(1, len(recall_per_class) + 1),  # Assuming class IDs start from 1
+                    "Class Name": val_dataset.classes,
+                    "Recall": recall_per_class
+                })
+                if stats_df.empty:
+                    stats_df = epoch_df
+                else:
+                    stats_df = pd.concat([stats_df, epoch_df], ignore_index=True)
+            
         
         print(f"Epoch {epoch+1}, \
             Valid loss: {val_loss*1.0/count}, \
@@ -168,4 +187,6 @@ if __name__ == "__main__":
 
     print('Finished Training')
 
-    parser.save_training_parameters(file_path, num_epochs=10)
+    if is_enable_stats_per_class:
+        stats_df.to_csv(stats_df_path, index=False)
+    parser.save_training_parameters(training_parameters_path, num_epochs=10)
