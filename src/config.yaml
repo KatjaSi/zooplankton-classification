@@ -2,7 +2,7 @@ num_classes: 77
 num_workers: 1
 
 batch_size: 64
-max_num_epochs: 2
+max_num_epochs: 50
 
 model:
   name: resnet50
@@ -15,13 +15,13 @@ optimizer:
   lr: 0.00005
 
 scheduler:
-  enable: true
+  enable: false
   type: "CosineAnnealingLR"
   T_max: 100  # Number of epochs before first restart
   eta_min: 0.000001  # Minimum lr
 
 early_stopping:
-  early_stopping_metric: loss
+  early_stopping_metric: balanced_accuracy # loss, accuracy or balanced_accuracy
   patience: 5
 
 reports:

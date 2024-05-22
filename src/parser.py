@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import json
+import operator
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 
@@ -135,3 +136,12 @@ class Parser():
 
     def is_checkpoint(self):
         return self.config['checkpoint']
+
+    def get_compare_operator(self):
+        metric_name = self.get_early_stopping_metric()
+        if metric_name in ["accuracy", "balanced_accuracy"]:
+            return operator.gt
+        elif metric_name == "loss":
+            return operator.lt
+        else:
+            raise ValueError(f"Unsupported metric: {metric_name}")

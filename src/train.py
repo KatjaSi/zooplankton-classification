@@ -38,9 +38,11 @@ def main():
     is_enable_stats_per_class = parser.is_enable_stats_per_class()
     num_workers = parser.get_num_workers()
     is_checkpoint = parser.is_checkpoint()
+    early_stopping_metric = parser.get_early_stopping_metric()
+    compare_op = parser.get_compare_operator()
 
     # early stopping
-    best_loss = float('inf')
+    best_metric = float('-inf') if early_stopping_metric in ["accuracy", "balanced_accuracy"] else float('inf')
     best_model_weights = None
     patience = parser.get_patience()
     best_epoch = 0
@@ -165,26 +167,26 @@ def main():
             stats_df = epoch_df if stats_df.empty else pd.concat([stats_df, epoch_df], ignore_index=True)
 
         # early stopping
-        if val_loss < best_loss:
-            best_loss = val_loss
-            best_model_weights = copy.deepcopy(model.state_dict())     
-            patience_count = patience  
+        metric_value = result[early_stopping_metric]
+        if compare_op(metric_value, best_metric):
+            best_metric = metric_value
+            best_model_weights = copy.deepcopy(model.state_dict())
             best_epoch = epoch + 1
         else:
             patience_count -= 1
             if patience_count == 0:
-                num_epochs= epoch + 1
+                num_epochs = epoch + 1
                 break
-
+        
 
     print('Finished Training')
  
     # test
     model.load_state_dict(best_model_weights)
 
-    result = one_iter(model, criterion, test_loader, 
-                            device, 
-                            train=False, 
+    result = one_iter(model, criterion, test_loader,
+                            device,
+                            train=False,
                             monitoring_metrics=['accuracy', 'balanced_accuracy'])
     loss = result['loss']
     accuracy = result['accuracy']
