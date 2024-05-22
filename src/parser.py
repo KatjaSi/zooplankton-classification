@@ -11,59 +11,45 @@ class Parser():
 
     def __init__(self, config_file_path='src/config.yaml'):
         with open('src/config.yaml', 'r') as file:
-            config_file = yaml.safe_load(file)
-            self.num_classes = config_file['num_classes']
-            self.num_workers = config_file['num_workers']
-            self.batch_size = config_file['batch_size']
-            self.max_num_epochs = config_file['max_num_epochs']
-            self.patience = config_file['patience']
-            self.report_config = config_file['reports']
-            self.dataset = config_file['dataset']
-            self.model_name = config_file['model']['name']
-            self.pretrained = config_file['model']['pretrained']
-            self.optimizer = config_file['optimizer']
-            self.scheduler = config_file['scheduler']
-            self.fine_tune = config_file['model']['fine_tune']
-            self.freeze_until = config_file['model']['freeze_until']
-            self.checkpoint = config_file['checkpoint']
+            self.config = yaml.safe_load(file)
 
     def get_num_classes(self):
-        return self.num_classes
+        return self.config['num_classes']
 
     def get_num_workers(self):
-        return self.num_workers
+        return self.config['num_workers']
     
     def get_batch_size(self):
-        return self.batch_size
+        return self.config['batch_size']
 
     def get_max_num_epochs(self):
-        return self.max_num_epochs
+        return self.config['max_num_epochs']
     
     def get_patience(self):
-        return self.patience
+        return self.config['early_stopping']['patience']
+
+    def get_early_stopping_metric(self):
+        return self.config['early_stopping']['early_stopping_metric']
 
     def get_dataset_name(self):
-        return self.dataset
-
-    #def get_report_config(self):
-     #   return self.report_config
+        return self.config['dataset']
 
     def is_enable_report(self):
-        return self.report_config['enable']
+        return self.config['reports']['enable']
     
     def get_report_frequency(self):
-        return self.report_config['frequency']
+        return self.config['reports']['frequency']
 
     def is_enable_confusion_matrix(self):
-        return self.is_enable_report() and self.report_config['types']['confusion_matrix']
+        return self.is_enable_report() and self.config['reports']['types']['confusion_matrix']
 
     def is_enable_stats_per_class(self):
-        return  self.is_enable_report() and self.report_config['types']['stats_per_class']
+        return  self.is_enable_report() and self.config['reports']['types']['stats_per_class']
 
     def get_model(self):
-        model_name = self.model_name
-        pretrained = self.pretrained
-        num_classes = self.num_classes
+        model_name = self.config['model']['name']
+        pretrained = self.config['model']['pretrained']
+        num_classes = self.get_num_classes()
         if model_name == 'vgg16':
             model = torchvision.models.vgg16(weights=pretrained)
             model.classifier[-1] = nn.Linear(in_features=4096, out_features=num_classes)
@@ -79,23 +65,24 @@ class Parser():
         else:
             raise ValueError(f"Unsupported model name: {model_name}")
 
-        if not self.fine_tune:
+        if not self.config['model']['fine_tune']:
             found_layer = False
             for name, param in model.named_parameters():
-                if self.freeze_until in name:
+                if self.config['model']['freeze_until'] in name:
                     found_layer = True
                     print(f"Freezing up to {name}")
                     break
                 param.requires_grad = False
-            assert found_layer, f"Layer named {self.freeze_until} not found in the model."
+            assert found_layer, f"Layer named {self.config['model']['freeze_until']} not found in the model."
         return model
 
     def get_model_name(self):
-        return self.model_name
+        return self.config['model']['name']
 
     def get_optimizer(self, model):
-        optimizer_type = self.optimizer['type']
-        lr = self.optimizer['lr']
+        optimizer = self.config['optimizer']
+        optimizer_type = optimizer['type']
+        lr = optimizer['lr']
         if optimizer_type == 'Adam':
             return optim.Adam(params=model.parameters(), lr=lr)
         elif optimizer_type=='SGD':
@@ -104,16 +91,16 @@ class Parser():
             raise ValueError(f"Unsupported optimizer type: {optimizer_type}")
     
     def get_scheduler(self, optimizer):
-        if self.scheduler['enable']:
-            if self.scheduler['type'] == 'CosineAnnealingLR':
-                scheduler = CosineAnnealingLR(optimizer, T_max=self.scheduler['T_max'], eta_min=self.scheduler['eta_min'])
+        if self.config['scheduler']['enable']:
+            if self.config['scheduler']['type'] == 'CosineAnnealingLR':
+                scheduler = CosineAnnealingLR(optimizer, T_max=self.config['scheduler']['T_max'], eta_min=self.config['scheduler']['eta_min'])
                 return scheduler
             else:
-                raise ValueError(f"Unsupported scheduler type: {self.scheduler['type']}")
+                raise ValueError(f"Unsupported scheduler type: {self.config['scheduler']['type']}")
         return None
 
     def is_enable_scheduler(self):
-        return self.scheduler['enable']
+        return self.config['scheduler']['enable']
 
 
     def save_training_parameters(self, file_path, num_epochs=None, best_epoch=None):
@@ -123,23 +110,23 @@ class Parser():
             gpu_types = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
         else:
             gpu_types = []
-        num_epochs = num_epochs if num_epochs is not None else self.max_num_epochs
+        num_epochs = num_epochs if num_epochs is not None else self.get_max_num_epochs()
         model = {
             'name': self.get_model_name(),
-            'pretrained': self.pretrained,
-            'fine_tune': self.fine_tune,
-            'freeze_until': self.freeze_until
+            'pretrained': self.config['model']['pretrained'],
+            'fine_tune': self.config['model']['fine_tune'],
+            'freeze_until': self.config['model']['freeze_until']
         }
         training_parameters = {
             'num_gpus': num_gpus,
             'gpu_types': gpu_types,
-            'num_workers': self.num_workers,
-            'batch_size': self.batch_size,
+            'num_workers': self.get_num_workers(),
+            'batch_size': self.get_batch_size(),
             'num_epochs': num_epochs,
             'model': model,
-            'optimizer': self.optimizer,
-            'scheduler': self.scheduler,
-            'dataset': self.dataset
+            'optimizer': self.config['optimizer'],
+            'scheduler': self.config['scheduler'],
+            'dataset': self.get_dataset_name()
         }
         if best_epoch is not None:
             training_parameters['best_epoch'] = best_epoch
@@ -147,4 +134,4 @@ class Parser():
             json.dump(training_parameters, json_file, indent=4) # type: ignore
 
     def is_checkpoint(self):
-        return self.checkpoint
+        return self.config['checkpoint']

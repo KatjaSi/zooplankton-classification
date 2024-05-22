@@ -3,7 +3,7 @@ venv/
 datasets/
 tmp/
 src/data/*
-graphs/
+checkpoints/
 src/__pycache__/
 COP6_Caligidae/
 

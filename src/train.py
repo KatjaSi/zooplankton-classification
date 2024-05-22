@@ -1,9 +1,7 @@
 import torch
 import torch.nn as nn
-import torchvision
 import torchvision.transforms as transforms
 import numpy as np
-import sklearn.metrics as metrics
 import shutil
 import os
 from torch.utils.data import DataLoader, Dataset
@@ -24,7 +22,7 @@ import copy
 from train_utils import one_iter
 
 
-if __name__ == "__main__":
+def main():
 
     parser = Parser()
 
@@ -202,3 +200,7 @@ if __name__ == "__main__":
         parser.save_training_parameters(training_parameters_path,
                                 num_epochs=num_epochs,
                                 best_epoch=best_epoch)
+
+
+if __name__ == "__main__":
+    main()

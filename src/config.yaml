@@ -3,7 +3,6 @@ num_workers: 1
 
 batch_size: 64
 max_num_epochs: 2
-patience: 5
 
 model:
   name: resnet50
@@ -20,6 +19,10 @@ scheduler:
   type: "CosineAnnealingLR"
   T_max: 100  # Number of epochs before first restart
   eta_min: 0.000001  # Minimum lr
+
+early_stopping:
+  early_stopping_metric: loss
+  patience: 5
 
 reports:
   enable: true
