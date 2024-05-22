@@ -15,7 +15,8 @@ class Parser():
             self.num_classes = config_file['num_classes']
             self.num_workers = config_file['num_workers']
             self.batch_size = config_file['batch_size']
-            self.num_epochs = config_file['num_epochs']
+            self.max_num_epochs = config_file['max_num_epochs']
+            self.patience = config_file['patience']
             self.report_config = config_file['reports']
             self.dataset = config_file['dataset']
             self.model_name = config_file['model']['name']
@@ -24,6 +25,7 @@ class Parser():
             self.scheduler = config_file['scheduler']
             self.fine_tune = config_file['model']['fine_tune']
             self.freeze_until = config_file['model']['freeze_until']
+            self.checkpoint = config_file['checkpoint']
 
     def get_num_classes(self):
         return self.num_classes
@@ -34,8 +36,11 @@ class Parser():
     def get_batch_size(self):
         return self.batch_size
 
-    def get_num_epochs(self):
-        return self.num_epochs
+    def get_max_num_epochs(self):
+        return self.max_num_epochs
+    
+    def get_patience(self):
+        return self.patience
 
     def get_dataset_name(self):
         return self.dataset
@@ -50,10 +55,10 @@ class Parser():
         return self.report_config['frequency']
 
     def is_enable_confusion_matrix(self):
-        return self.report_config['types']['confusion_matrix']
+        return self.is_enable_report() and self.report_config['types']['confusion_matrix']
 
     def is_enable_stats_per_class(self):
-        return self.report_config['types']['stats_per_class']
+        return  self.is_enable_report() and self.report_config['types']['stats_per_class']
 
     def get_model(self):
         model_name = self.model_name
@@ -111,14 +116,14 @@ class Parser():
         return self.scheduler['enable']
 
 
-    def save_training_parameters(self, file_path, num_epochs=None):
+    def save_training_parameters(self, file_path, num_epochs=None, best_epoch=None):
         num_gpus = 0
         if torch.cuda.is_available():
             num_gpus = torch.cuda.device_count()
             gpu_types = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
         else:
             gpu_types = []
-        num_epochs = num_epochs if num_epochs is not None else self.num_epochs
+        num_epochs = num_epochs if num_epochs is not None else self.max_num_epochs
         model = {
             'name': self.get_model_name(),
             'pretrained': self.pretrained,
@@ -136,6 +141,10 @@ class Parser():
             'scheduler': self.scheduler,
             'dataset': self.dataset
         }
-
+        if best_epoch is not None:
+            training_parameters['best_epoch'] = best_epoch
         with open(file_path, 'w') as json_file:
             json.dump(training_parameters, json_file, indent=4) # type: ignore
+
+    def is_checkpoint(self):
+        return self.checkpoint

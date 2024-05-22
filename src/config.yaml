@@ -2,7 +2,8 @@ num_classes: 77
 num_workers: 1
 
 batch_size: 64
-num_epochs: 1
+max_num_epochs: 2
+patience: 5
 
 model:
   name: resnet50
@@ -26,5 +27,7 @@ reports:
   types:
     confusion_matrix: true
     stats_per_class: true
+
+checkpoint: true # save model and training parameters
 
 dataset: ZooScan77_small

@@ -18,6 +18,62 @@ import torch.optim as optim
 
 import os
 import pandas as pd
+import copy
+
+
+def one_iter(loader, device, train=True, optimizer=None, scheduler=None, monitoring_metrics=list()):
+    running_loss = 0.0
+    count = 0.0
+    if train:
+        model.train()
+    else:
+        model.eval()
+
+    preds_arr = []
+    targets_arr = []
+    for data, labels in (loader):
+        batch_size = len(labels)
+        data = data.to(device)
+        labels = labels.to(device)
+        if optimizer is not None:
+            optimizer.zero_grad()
+        outputs = model(data)
+        loss = criterion(outputs, labels)
+        if train:
+            loss.backward()
+            optimizer.step()
+
+        preds = outputs.max(dim=1)[1]
+        count += batch_size
+        running_loss += loss.item() * batch_size
+
+        targets_arr.append(labels.cpu().numpy())
+        preds_arr.append(preds.detach().cpu().numpy())
+
+        if train and scheduler is not None:
+            scheduler.step()
+
+    targets = np.concatenate(targets_arr)
+    preds = np.concatenate(preds_arr)
+
+    loss = running_loss*1.0/count
+
+    result = {"loss": loss}
+    if "accuracy" in monitoring_metrics:
+        accuracy = metrics.accuracy_score(targets, preds)
+        result["accuracy"] = accuracy
+    if "balanced_accuracy" in monitoring_metrics:
+        balanced_accuracy = metrics.balanced_accuracy_score(targets, preds)
+        result["balanced_accuracy"] = balanced_accuracy
+    if "confusion_matrix" in monitoring_metrics:
+        cm = metrics.confusion_matrix(targets, preds)
+        result["confusion_matrix"] = cm
+    if "recall_per_class" in monitoring_metrics:
+        recall_per_class = metrics.recall_score(targets, preds, average=None)
+        result["recall_per_class"] = recall_per_class
+
+    return result
+
 
 
 if __name__ == "__main__":
@@ -28,22 +84,31 @@ if __name__ == "__main__":
 
     num_classes = parser.get_num_classes()
     batch_size = parser.get_batch_size()
-    num_epochs = parser.get_num_epochs()
+    max_num_epochs = parser.get_max_num_epochs()
     dataset = parser.get_dataset_name()
-    is_enable_report = parser.is_enable_report() 
+    is_enable_report = parser.is_enable_report()
     report_frequency = parser.get_report_frequency()
     is_enable_confusion_matrix = parser.is_enable_confusion_matrix()
     is_enable_stats_per_class = parser.is_enable_stats_per_class()
     num_workers = parser.get_num_workers()
+    is_checkpoint = parser.is_checkpoint()
 
-    graph_path = os.path.join('graphs', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d %H-%M'))
+    # early stopping
+    best_loss = float('inf')
+    best_model_weights = None
+    patience = parser.get_patience()
+    best_epoch = 0
 
-    if os.path.exists(graph_path):
-        shutil.rmtree(graph_path)
-    os.makedirs(graph_path)
+    checkpoint_path = os.path.join('checkpoints', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d %H-%M'))
 
-    training_parameters_path = os.path.join(graph_path, 'training_parameters')
-    stats_df_path = os.path.join(graph_path, 'stats_df.csv')
+    if os.path.exists(checkpoint_path):
+        shutil.rmtree(checkpoint_path)
+    if is_enable_report or is_checkpoint:
+        os.makedirs(checkpoint_path)
+
+    training_parameters_path = os.path.join(checkpoint_path, 'training_parameters')
+    stats_df_path = os.path.join(checkpoint_path, 'stats_df.csv')
+    best_model_path = os.path.join(checkpoint_path, "best_model.pth")
 
     if is_enable_stats_per_class:
         columns = ["Epoch", "Class ID", "Recall"]
@@ -76,7 +141,7 @@ if __name__ == "__main__":
 
     train_dataset = ImageFolder(root=f"datasets/{dataset}/train", transform=train_transform)
     val_dataset = ImageFolder(root=f"datasets/{dataset}/val", transform=val_transform)
-    test_dataset  = ImageFolder(root=f"datasets/{dataset}/test")
+    test_dataset  = ImageFolder(root=f"datasets/{dataset}/test", transform=val_transform)
 
 
     # weighted random sampler
@@ -98,95 +163,94 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
     optimizer = parser.get_optimizer(model) 
     scheduler = parser.get_scheduler(optimizer)
-    
-    for epoch in range(num_epochs):  
-        running_loss = 0.0
-        count = 0.0
-        model.train()
-
-        train_pred = []
-        train_true = []
-        for data, labels in (train_loader):
-            batch_size = len(labels)
-            data = data.to(device)
-            labels = labels.to(device)
-            optimizer.zero_grad()
-            outputs = model(data)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            preds = outputs.max(dim=1)[1]
-
-            count += batch_size
-            running_loss += loss.item() * batch_size
-
-            train_true.append(labels.cpu().numpy())
-            train_pred.append(preds.detach().cpu().numpy())
-
-        if parser.is_enable_scheduler():
-            scheduler.step()
-
-        train_true = np.concatenate(train_true)
-        train_pred = np.concatenate(train_pred)
-        accuracy = metrics.accuracy_score(train_true, train_pred)
-        balanced_accuracy = metrics.balanced_accuracy_score(train_true, train_pred)
+    num_epochs = max_num_epochs
+    patience_count = patience
+    for epoch in range(max_num_epochs):  
+        result = one_iter(train_loader, 
+                            device, 
+                            train=True, 
+                            optimizer=optimizer,
+                            scheduler=scheduler,
+                            monitoring_metrics=['accuracy', 'balanced_accuracy'])
+        loss = result['loss']
+        accuracy = result['accuracy']
+        balanced_accuracy = result['balanced_accuracy']
         print(f"Epoch {epoch+1}, \
-            Train loss: {running_loss*1.0/count}, \
+            Train loss: {loss}, \
             train accuracy: {accuracy:.6f},\
             balanced train accuracy: {balanced_accuracy:.6f}")
 
         
         ### validation ###
-        val_loss = 0.0
-        count = 0.0
-        model.eval()
-        val_pred = []
-        val_true = []
-
-        for data, labels in (val_loader):
-            batch_size = len(labels)
-            data = data.to(device)
-            labels = labels.to(device)
-            outputs = model(data)
-            loss = criterion(outputs, labels)
-            preds = outputs.max(dim=1)[1]
-            count += batch_size
-            val_loss += loss.item() * batch_size
-            val_true.append(labels.cpu().numpy())
-            val_pred.append(preds.detach().cpu().numpy())
-
-        val_true = np.concatenate(val_true)
-        val_pred = np.concatenate(val_pred)
-        accuracy = metrics.accuracy_score(val_true, val_pred)
-        balanced_accuracy = metrics.balanced_accuracy_score(val_true, val_pred)
-
+        monitoring_metrics=['accuracy', 'balanced_accuracy']
         if is_enable_report and (epoch + 1) % report_frequency == 0:
-            if is_enable_confusion_matrix:
-                cm = metrics.confusion_matrix(val_true, val_pred)
-                class_names = val_dataset.classes
-                plot_confusion_matrix(cm, class_names, epoch, graph_path)
-            if is_enable_stats_per_class:
-                recall_per_class = metrics.recall_score(val_true, val_pred, average=None)
-                epoch_df = pd.DataFrame({
+            monitoring_metrics += [
+                metric for metric, enabled in [
+                    ("confusion_matrix", is_enable_confusion_matrix),
+                    ("recall_per_class", is_enable_stats_per_class)
+                ] if enabled
+            ]
+        
+        result = one_iter(val_loader, 
+                                device, 
+                                train=False, 
+                                monitoring_metrics=monitoring_metrics)
+        val_loss = result['loss']
+        accuracy = result['accuracy']
+        balanced_accuracy = result['balanced_accuracy']
+        print(f"Epoch {epoch+1}, \
+            Valid loss: {val_loss}, \
+            valid accuracy: {accuracy:.6f},\
+            balanced valid accuracy: {balanced_accuracy:.6f}")
+
+        if "confusion_matrix" in result:
+            cm = result["confusion_matrix"]
+            class_names = val_dataset.classes
+            plot_confusion_matrix(cm, class_names, epoch, checkpoint_path)
+
+        if "recall_per_class" in result:
+            recall_per_class = result["recall_per_class"]
+            epoch_df = pd.DataFrame({
                     "Epoch": epoch + 1,
                     "Class ID": range(1, len(recall_per_class) + 1),  # Assuming class IDs start from 1
                     "Class Name": val_dataset.classes,
                     "Recall": recall_per_class
                 })
-                if stats_df.empty:
-                    stats_df = epoch_df
-                else:
-                    stats_df = pd.concat([stats_df, epoch_df], ignore_index=True)
-            
-        
-        print(f"Epoch {epoch+1}, \
-            Valid loss: {val_loss*1.0/count}, \
-            valid accuracy: {accuracy:.6f},\
-            balanced valid accuracy: {balanced_accuracy:.6f}\n")
+            stats_df = epoch_df if stats_df.empty else pd.concat([stats_df, epoch_df], ignore_index=True)
+
+        # early stopping
+        if val_loss < best_loss:
+            best_loss = val_loss
+            best_model_weights = copy.deepcopy(model.state_dict())     
+            patience_count = patience  
+            best_epoch = epoch + 1
+        else:
+            patience_count -= 1
+            if patience_count == 0:
+                num_epochs= epoch + 1
+                break
 
 
     print('Finished Training')
+ 
+    # test
+    model.load_state_dict(best_model_weights)
+
+    result = one_iter(test_loader, 
+                            device, 
+                            train=False, 
+                            monitoring_metrics=['accuracy', 'balanced_accuracy'])
+    loss = result['loss']
+    accuracy = result['accuracy']
+    balanced_accuracy = result['balanced_accuracy']
+    print(f"Test loss: {loss}, \
+            test accuracy: {accuracy:.6f},\
+            balanced test accuracy: {balanced_accuracy:.6f}")
 
     if is_enable_stats_per_class:
         stats_df.to_csv(stats_df_path, index=False)
-    parser.save_training_parameters(training_parameters_path, num_epochs=10)
+    if is_checkpoint:
+        torch.save(model.state_dict(), best_model_path)
+        parser.save_training_parameters(training_parameters_path,
+                                num_epochs=num_epochs,
+                                best_epoch=best_epoch)
