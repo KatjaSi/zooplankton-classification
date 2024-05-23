@@ -33,8 +33,6 @@ def main():
     dataset = parser.get_dataset_name()
     is_enable_report = parser.is_enable_report()
     report_frequency = parser.get_report_frequency()
-    is_enable_confusion_matrix = parser.is_enable_confusion_matrix()
-    is_enable_stats_per_class = parser.is_enable_stats_per_class()
     num_workers = parser.get_num_workers()
     is_checkpoint = parser.is_checkpoint()
     early_stopping_metric = parser.get_early_stopping_metric()
@@ -57,10 +55,6 @@ def main():
     stats_df_path = os.path.join(checkpoint_path, 'stats_df.csv')
     best_model_path = os.path.join(checkpoint_path, "best_model.pth")
     report_path = os.path.join(checkpoint_path, "report.txt")
-
-    if is_enable_stats_per_class:
-        columns = ["Epoch", "Class ID", "Recall", "Precision", "F1_Score"]
-        stats_df = pd.DataFrame(columns=columns)
 
     train_transform = transforms.Compose([
        # transforms.Resize(256),
@@ -90,6 +84,11 @@ def main():
     train_dataset = ImageFolder(root=f"datasets/{dataset}/train", transform=train_transform)
     val_dataset = ImageFolder(root=f"datasets/{dataset}/val", transform=val_transform)
     test_dataset  = ImageFolder(root=f"datasets/{dataset}/test", transform=val_transform)
+
+    if is_enable_report:
+        columns = ["Epoch", "Class ID", "Recall", "Precision", "F1_Score"] \
+                    +  [f"Misclassification {i+1}" for i in range(len(val_dataset.classes))]
+        stats_df = pd.DataFrame(columns=columns)
 
 
     # weighted random sampler
@@ -131,13 +130,11 @@ def main():
         monitoring_metrics=['accuracy', 'balanced_accuracy', 'macro_avg_precision', 'macro_avg_f1_score']
         if is_enable_report and (epoch + 1) % report_frequency == 0:
             monitoring_metrics += [
-                metric for metric, enabled in [
-                    ("confusion_matrix", is_enable_confusion_matrix),
-                    ("recall_per_class", is_enable_stats_per_class),
-                    ("precision_per_class", is_enable_stats_per_class),
-                    ("f1_score_per_class", is_enable_stats_per_class)
-                ] if enabled
-            ]
+                    "confusion_matrix",
+                    "recall_per_class", 
+                    "precision_per_class", 
+                    "f1_score_per_class"
+                ]
         
         result = one_iter(model, criterion, val_loader,
                                 device,
@@ -152,24 +149,31 @@ def main():
             Valid loss: {val_loss}, \
             valid accuracy: {accuracy:.6f},\
             balanced valid accuracy: {balanced_accuracy:.6f}")
-
-        if "confusion_matrix" in result:
+            
+        if is_enable_report:
             cm = result["confusion_matrix"]
             class_names = val_dataset.classes
             plot_confusion_matrix(cm, class_names, epoch, checkpoint_path)
-
-        if is_enable_stats_per_class:
             recall_per_class = result["recall_per_class"]
             precision_per_class = result["precision_per_class"]
             f1_score_per_class = result["f1_score_per_class"]
-            epoch_df = pd.DataFrame({
+
+            cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+            rows = []
+            for class_idx, class_name in enumerate(val_dataset.classes):
+                row = {
                     "Epoch": epoch + 1,
-                    "Class ID": range(1, len(recall_per_class) + 1),  
-                    "Class Name": val_dataset.classes,
-                    "Recall": recall_per_class,
-                    "Precision": precision_per_class,
-                    "F1_Score": f1_score_per_class
-                })
+                    "Class ID": class_idx + 1,
+                    "Class Name": class_name,
+                    "Recall": recall_per_class[class_idx],
+                    "Precision": precision_per_class[class_idx],
+                    "F1_Score": f1_score_per_class[class_idx]
+                }
+                for i, confusion_percentage in enumerate(cm_normalized[class_idx]):
+                    row[f"Misclassification {i+1}"] = confusion_percentage
+                rows.append(row)
+            
+            epoch_df = pd.DataFrame(rows)
             stats_df = epoch_df if stats_df.empty else pd.concat([stats_df, epoch_df], ignore_index=True)
 
         # early stopping
@@ -211,7 +215,7 @@ def main():
             test accuracy: {accuracy:.6f},\
             balanced test accuracy: {balanced_accuracy:.6f}")
 
-    if is_enable_stats_per_class:
+    if is_enable_report:
         stats_df.to_csv(stats_df_path, index=False)
     if is_checkpoint:
         torch.save(model.state_dict(), best_model_path)
@@ -220,8 +224,8 @@ def main():
                                 best_epoch=best_epoch)
         with open(report_path, "a") as report_file:
             report_file.write("Test Set Metrics:\n")
-            report_file.write(f"Accuracy: {balanced_accuracy:.6f}\n")
-            report_file.write(f"Balanced Accuracy: {accuracy:.6f}\n")
+            report_file.write(f"Accuracy: {accuracy:.6f}\n")
+            report_file.write(f"Balanced Accuracy: {balanced_accuracy:.6f}\n")
             report_file.write(f"Macro Avg Precision: {macro_avg_precision:.6f}\n")
             report_file.write(f"Macro Avg F1 Score: {macro_avg_f1_score:.6f}\n")
 

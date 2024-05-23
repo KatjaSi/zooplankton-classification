@@ -27,9 +27,6 @@ early_stopping:
 reports:
   enable: true
   frequency: 1
-  types:
-    confusion_matrix: true
-    stats_per_class: true
 
 checkpoint: true # save model and training parameters
 

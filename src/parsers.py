@@ -44,12 +44,6 @@ class TrainConfigParser():
     def get_report_frequency(self):
         return self.config['reports']['frequency']
 
-    def is_enable_confusion_matrix(self):
-        return self.is_enable_report() and self.config['reports']['types']['confusion_matrix']
-
-    def is_enable_stats_per_class(self):
-        return  self.is_enable_report() and self.config['reports']['types']['stats_per_class']
-
     def get_model(self):
         model_name = self.config['model']['name']
         pretrained = self.config['model']['pretrained']
@@ -177,5 +171,18 @@ class MetricPlotterConfigParser():
             pattern = re.compile(rf"^{category}[1-9][0-9]?_")
             classes = [cls for cls in all_classes if pattern.match(cls)]
             return classes
+
+    def get_true_class(self):
+        """
+        Apply for confusion trends plot
+        """
+        return self.config['true_class']
             
-    
+    def get_top_N(self):
+        return self.config["top_N"]
+
+    def get_class_names(self):
+        return ImageFolder(root=f"datasets/ZooScan77/train").classes
+
+    def get_epoch_until(self):
+        return self.config["epoch_until"]
