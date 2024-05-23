@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
 from torch.utils.data import WeightedRandomSampler
 from plots import plot_confusion_matrix
-from parser import Parser # type: ignore
+from parsers import TrainConfigParser # type: ignore
 from transforms import apply_clahe, resize_and_pad
 from datetime import datetime
 
@@ -24,11 +24,10 @@ from train_utils import one_iter
 
 def main():
 
-    parser = Parser()
+    parser = TrainConfigParser()
 
     device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
 
-    num_classes = parser.get_num_classes()
     batch_size = parser.get_batch_size()
     max_num_epochs = parser.get_max_num_epochs()
     dataset = parser.get_dataset_name()
@@ -47,7 +46,7 @@ def main():
     patience = parser.get_patience()
     best_epoch = 0
 
-    checkpoint_path = os.path.join('checkpoints', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d %H-%M'))
+    checkpoint_path = os.path.join('checkpoints', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d-%H-%M'))
 
     if os.path.exists(checkpoint_path):
         shutil.rmtree(checkpoint_path)
@@ -57,9 +56,10 @@ def main():
     training_parameters_path = os.path.join(checkpoint_path, 'training_parameters')
     stats_df_path = os.path.join(checkpoint_path, 'stats_df.csv')
     best_model_path = os.path.join(checkpoint_path, "best_model.pth")
+    report_path = os.path.join(checkpoint_path, "report.txt")
 
     if is_enable_stats_per_class:
-        columns = ["Epoch", "Class ID", "Recall"]
+        columns = ["Epoch", "Class ID", "Recall", "Precision", "F1_Score"]
         stats_df = pd.DataFrame(columns=columns)
 
     train_transform = transforms.Compose([
@@ -100,11 +100,9 @@ def main():
     weights = class_weights[train_labels]
     sampler = WeightedRandomSampler(weights, len(weights))
     
-
     train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-
 
     model = parser.get_model().to(device)
     model = nn.DataParallel(model) 
@@ -113,8 +111,8 @@ def main():
     scheduler = parser.get_scheduler(optimizer)
     num_epochs = max_num_epochs
     patience_count = patience
-    for epoch in range(max_num_epochs):  
-        result = one_iter(model, criterion, train_loader, 
+    for epoch in range(max_num_epochs):
+        result = one_iter(model, criterion, train_loader,
                             device, 
                             train=True, 
                             optimizer=optimizer,
@@ -130,22 +128,26 @@ def main():
 
         
         ### validation ###
-        monitoring_metrics=['accuracy', 'balanced_accuracy']
+        monitoring_metrics=['accuracy', 'balanced_accuracy', 'macro_avg_precision', 'macro_avg_f1_score']
         if is_enable_report and (epoch + 1) % report_frequency == 0:
             monitoring_metrics += [
                 metric for metric, enabled in [
                     ("confusion_matrix", is_enable_confusion_matrix),
-                    ("recall_per_class", is_enable_stats_per_class)
+                    ("recall_per_class", is_enable_stats_per_class),
+                    ("precision_per_class", is_enable_stats_per_class),
+                    ("f1_score_per_class", is_enable_stats_per_class)
                 ] if enabled
             ]
         
-        result = one_iter(model, criterion, val_loader, 
-                                device, 
-                                train=False, 
+        result = one_iter(model, criterion, val_loader,
+                                device,
+                                train=False,
                                 monitoring_metrics=monitoring_metrics)
         val_loss = result['loss']
         accuracy = result['accuracy']
         balanced_accuracy = result['balanced_accuracy']
+        macro_avg_precision = result['macro_avg_precision']
+        macro_avg_f1_score = result['macro_avg_f1_score']
         print(f"Epoch {epoch+1}, \
             Valid loss: {val_loss}, \
             valid accuracy: {accuracy:.6f},\
@@ -156,13 +158,17 @@ def main():
             class_names = val_dataset.classes
             plot_confusion_matrix(cm, class_names, epoch, checkpoint_path)
 
-        if "recall_per_class" in result:
+        if is_enable_stats_per_class:
             recall_per_class = result["recall_per_class"]
+            precision_per_class = result["precision_per_class"]
+            f1_score_per_class = result["f1_score_per_class"]
             epoch_df = pd.DataFrame({
                     "Epoch": epoch + 1,
-                    "Class ID": range(1, len(recall_per_class) + 1),  # Assuming class IDs start from 1
+                    "Class ID": range(1, len(recall_per_class) + 1),  
                     "Class Name": val_dataset.classes,
-                    "Recall": recall_per_class
+                    "Recall": recall_per_class,
+                    "Precision": precision_per_class,
+                    "F1_Score": f1_score_per_class
                 })
             stats_df = epoch_df if stats_df.empty else pd.concat([stats_df, epoch_df], ignore_index=True)
 
@@ -172,6 +178,7 @@ def main():
             best_metric = metric_value
             best_model_weights = copy.deepcopy(model.state_dict())
             best_epoch = epoch + 1
+            patience_count = patience
         else:
             patience_count -= 1
             if patience_count == 0:
@@ -180,6 +187,13 @@ def main():
         
 
     print('Finished Training')
+    if is_checkpoint:
+        with open(report_path, "a") as report_file:
+            report_file.write("Valid Set Metrics:\n")
+            report_file.write(f"Accuracy: {balanced_accuracy:.6f}\n")
+            report_file.write(f"Balanced Accuracy: {accuracy:.6f}\n")
+            report_file.write(f"Macro Avg Precision: {macro_avg_precision:.6f}\n")
+            report_file.write(f"Macro Avg F1 Score: {macro_avg_f1_score:.6f}\n")
  
     # test
     model.load_state_dict(best_model_weights)
@@ -187,10 +201,12 @@ def main():
     result = one_iter(model, criterion, test_loader,
                             device,
                             train=False,
-                            monitoring_metrics=['accuracy', 'balanced_accuracy'])
+                            monitoring_metrics=['accuracy', 'balanced_accuracy', 'macro_avg_precision', 'macro_avg_f1_score'])
     loss = result['loss']
     accuracy = result['accuracy']
     balanced_accuracy = result['balanced_accuracy']
+    macro_avg_precision = result['macro_avg_precision']
+    macro_avg_f1_score = result['macro_avg_f1_score']
     print(f"Test loss: {loss}, \
             test accuracy: {accuracy:.6f},\
             balanced test accuracy: {balanced_accuracy:.6f}")
@@ -202,6 +218,12 @@ def main():
         parser.save_training_parameters(training_parameters_path,
                                 num_epochs=num_epochs,
                                 best_epoch=best_epoch)
+        with open(report_path, "a") as report_file:
+            report_file.write("Test Set Metrics:\n")
+            report_file.write(f"Accuracy: {balanced_accuracy:.6f}\n")
+            report_file.write(f"Balanced Accuracy: {accuracy:.6f}\n")
+            report_file.write(f"Macro Avg Precision: {macro_avg_precision:.6f}\n")
+            report_file.write(f"Macro Avg F1 Score: {macro_avg_f1_score:.6f}\n")
 
 
 if __name__ == "__main__":

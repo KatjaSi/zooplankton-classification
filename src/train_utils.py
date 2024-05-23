@@ -46,11 +46,22 @@ def one_iter(model, criterion, loader, device, train=True, optimizer=None, sched
     if "balanced_accuracy" in monitoring_metrics:
         balanced_accuracy = metrics.balanced_accuracy_score(targets, preds)
         result["balanced_accuracy"] = balanced_accuracy
+    if "macro_avg_precision" in monitoring_metrics:
+        macro_avg_precision = metrics.precision_score(targets, preds, average="macro")
+        result["macro_avg_precision"] = macro_avg_precision
+    if "macro_avg_f1_score" in monitoring_metrics:
+        macro_avg_f1_score = metrics.f1_score(targets, preds, average="macro")
+        result["macro_avg_f1_score"] = macro_avg_f1_score
     if "confusion_matrix" in monitoring_metrics:
         cm = metrics.confusion_matrix(targets, preds)
         result["confusion_matrix"] = cm
     if "recall_per_class" in monitoring_metrics:
         recall_per_class = metrics.recall_score(targets, preds, average=None)
         result["recall_per_class"] = recall_per_class
-
+    if "precision_per_class" in monitoring_metrics:
+        precision_per_class = metrics.precision_score(targets, preds, average=None)
+        result["precision_per_class"] = precision_per_class
+    if "f1_score_per_class" in monitoring_metrics:
+        f1_score_per_class = metrics.f1_score(targets, preds, average=None)
+        result["f1_score_per_class"] = f1_score_per_class
     return result

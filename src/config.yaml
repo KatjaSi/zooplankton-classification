@@ -17,7 +17,7 @@ optimizer:
 scheduler:
   enable: false
   type: "CosineAnnealingLR"
-  T_max: 100  # Number of epochs before first restart
+  T_max: 50  # Number of epochs before first restart
   eta_min: 0.000001  # Minimum lr
 
 early_stopping:

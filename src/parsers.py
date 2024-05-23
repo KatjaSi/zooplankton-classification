@@ -5,13 +5,16 @@ import torch.nn as nn
 import torch.optim as optim
 import json
 import operator
+import os
+import re
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from torchvision.datasets import ImageFolder
 
 
-class Parser():
+class TrainConfigParser():
 
     def __init__(self, config_file_path='src/config.yaml'):
-        with open('src/config.yaml', 'r') as file:
+        with open(config_file_path, 'r') as file:
             self.config = yaml.safe_load(file)
 
     def get_num_classes(self):
@@ -145,3 +148,34 @@ class Parser():
             return operator.lt
         else:
             raise ValueError(f"Unsupported metric: {metric_name}")
+
+
+class MetricPlotterConfigParser():
+
+    def __init__(self, config_file_path='src/metric_plotter_config.yaml'):
+        with open(config_file_path, 'r') as file:
+            self.config = yaml.safe_load(file)
+
+    def get_csv_file_path(self):
+        return os.path.join(self.config['csv_file_folder_path'], 'stats_df.csv')
+
+    def get_output_img_folder_path(self):
+        return self.config['output_img_folder_path']
+
+    def get_metric(self):
+        return self.config['metric']
+
+    def get_category(self):
+        return self.config['category']
+
+    def get_classes(self):
+        category = self.get_category()
+        if category is None:
+            return self.config['classes']
+        else:
+            all_classes = ImageFolder(root=f"datasets/ZooScan77/train").classes
+            pattern = re.compile(rf"^{category}[1-9][0-9]?_")
+            classes = [cls for cls in all_classes if pattern.match(cls)]
+            return classes
+            
+    

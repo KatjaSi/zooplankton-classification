@@ -1,0 +1,9 @@
+csv_file_folder_path: "checkpoints/resnet50/2024-05-22 12-01"
+
+output_img_folder_path: "plots/resnet50/2024-05-22 12-01"
+
+metric: "recall"
+
+category: 
+
+classes: ["COP10_Eucalanidae", "COP20_Rhincalanidae"] #ignored if category specified
