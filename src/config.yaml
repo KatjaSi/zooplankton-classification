@@ -30,4 +30,4 @@ reports:
 
 checkpoint: true # save model and training parameters
 
-dataset: ZooScan77_small
+dataset: ZooScan77_010

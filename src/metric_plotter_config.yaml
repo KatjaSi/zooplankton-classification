@@ -1,8 +1,8 @@
-csv_file_folder_path: "checkpoints/resnet50/2024-05-23-11-22"
-output_img_folder_path: "plots/resnet50/2024-05-23-11-22"
-metric: confusion_trends #"recall"
+csv_file_folder_path: "checkpoints/resnet50/2024-05-23-14-19"
+output_img_folder_path: "plots/resnet50/2024-05-23-14-19"
+metric: confusion_trends # one of Precision, Recall, confusion_trends, F1_Score
 category:  # ignored for confusion_trends 
-classes: ["COP10_Eucalanidae", "COP20_Rhincalanidae"] #ignored if category specified # ignored for confusion_trends
-true_class: EUM11_protozoea # specify for confusion_trends
-top_N: 2
+classes: ["EUM7_Mysida", "EUM2_Decapoda", "EUM11_protozoea"] #ignored if category specified # ignored for confusion_trends
+true_class: EUM3_Euphausiacea # specify for confusion_trends
+top_N: 3
 epoch_until: 

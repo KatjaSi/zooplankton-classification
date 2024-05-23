@@ -4,18 +4,18 @@ import os
 from parsers import MetricPlotterConfigParser
 
 
-def visualize_recall_per_class(csv_file_path, output_img_path, classes):
+def visualize_metric_per_class(csv_file_path, output_img_path, classes, metric="Recall"):
     df = pd.read_csv(csv_file_path)
   
     plt.figure(figsize=(12, 8))
 
     for class_name in classes:
         class_data = df[df['Class Name'] == class_name]
-        plt.plot(class_data['Epoch'], class_data['Recall'], label=class_name)
+        plt.plot(class_data['Epoch'], class_data[metric], label=class_name)
 
     plt.xlabel('Epoch')
-    plt.ylabel('Recall')
-    plt.title('Recall per Class over Epochs')
+    plt.ylabel(metric)
+    plt.title(f"{metric} per Class over Epochs")
     plt.legend()
     plt.grid(True)
 
@@ -62,14 +62,14 @@ def main():
 
     metric = parser.get_metric()
 
-    if metric == "recall":
+    if metric in ["Recall", "Precision", "F1_Score"]:
         classes = parser.get_classes()
         category = parser.get_category()
         if category is None:
             output_img_path = os.path.join(output_img_folder_path, f"{metric}_{'_'.join(classes)}.png")
         else:
             output_img_path = os.path.join(output_img_folder_path, f"{metric}_{category}.png")
-        visualize_recall_per_class(csv_file_path, output_img_path, classes)
+        visualize_metric_per_class(csv_file_path, output_img_path, classes, metric)
     if metric == "confusion_trends":
         true_class = parser.get_true_class()
         top_n = parser.get_top_N()
