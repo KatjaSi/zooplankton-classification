@@ -1,8 +1,11 @@
 import numpy as np
 import sklearn.metrics as metrics
+from parsers import TrainConfigParser
 
 
 def one_iter(model, criterion, loader, device, train=True, optimizer=None, scheduler=None, monitoring_metrics=list()):
+    parser = TrainConfigParser()
+    model_name = parser.get_model_name()
     running_loss = 0.0
     count = 0.0
     if train:
@@ -19,6 +22,8 @@ def one_iter(model, criterion, loader, device, train=True, optimizer=None, sched
         if optimizer is not None:
             optimizer.zero_grad()
         outputs = model(data)
+        if (model_name == "vit"):
+            outputs = outputs.logits
         loss = criterion(outputs, labels)
         if train:
             loss.backward()

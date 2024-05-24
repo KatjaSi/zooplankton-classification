@@ -10,6 +10,7 @@ import re
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torchvision.datasets import ImageFolder
 
+from transformers import ViTForImageClassification, ViTConfig
 
 class TrainConfigParser():
 
@@ -60,6 +61,15 @@ class TrainConfigParser():
         elif model_name == 'googlenet':
             model = torchvision.models.googlenet(pretrained=pretrained)
             model.fc = nn.Linear(in_features=1024, out_features=num_classes)
+        elif model_name == 'vit':
+            if pretrained:
+                model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224', 
+                                                                    num_labels=num_classes,
+                                                                    ignore_mismatched_sizes=True)
+            else:
+                config = ViTConfig()
+                config.num_labels = num_classes
+                model = ViTForImageClassification(config)
         else:
             raise ValueError(f"Unsupported model name: {model_name}")
 

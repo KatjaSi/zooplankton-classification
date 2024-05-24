@@ -5,7 +5,7 @@ batch_size: 64
 max_num_epochs: 50
 
 model:
-  name: resnet50
+  name: vit
   pretrained: true
   fine_tune: true  # If true, fine-tune the entire model; if false, freeze earlier layers
   freeze_until: none  # Options could be "all", "none", or specific layer like "layer4"
@@ -30,4 +30,4 @@ reports:
 
 checkpoint: true # save model and training parameters
 
-dataset: ZooScan77_010
+dataset: ZooScan77_small
