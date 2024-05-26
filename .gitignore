@@ -8,3 +8,4 @@ src/__pycache__/
 COP6_Caligidae/
 plots/
 temp.py
+src/analysis.py

@@ -44,7 +44,9 @@ def main():
     patience = parser.get_patience()
     best_epoch = 0
 
-    checkpoint_path = os.path.join('checkpoints', parser.get_model_name(), datetime.now().strftime('%Y-%m-%d-%H-%M'))
+    checkpoint_path = os.path.join('checkpoints',
+                                    parser.get_model_name(),
+                                    datetime.now().strftime('%Y-%m-%d-%H-%M'))
 
     if os.path.exists(checkpoint_path):
         shutil.rmtree(checkpoint_path)
@@ -61,24 +63,24 @@ def main():
        # transforms.CenterCrop(224),
         transforms.RandomHorizontalFlip(),
         #transforms.RandomRotation(180),
-        transforms.Lambda(lambda img: resize_and_pad(img)),  
-        transforms.RandomAffine(180, (0.1, 0.1)), # rotation + translation
+        transforms.Lambda(lambda img: resize_and_pad(img, fill=255)),
+        transforms.RandomAffine(180, (0.1, 0.1), fill=255), # rotation + translation
         transforms.ToTensor(),
         #transforms.Grayscale(num_output_channels=1),
         #transforms.Lambda(apply_clahe),
         #transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
-        transforms.Normalize(mean=[0.5], std=[0.5])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
     val_transform = transforms.Compose([
-        transforms.Lambda(lambda img: resize_and_pad(img)),  
+        transforms.Lambda(lambda img: resize_and_pad(img, fill=255)),
        # transforms.Resize(256),
        # transforms.CenterCrop(224),
         transforms.ToTensor(),
         #transforms.Grayscale(num_output_channels=1),
        # transforms.Lambda(apply_clahe),
         #transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
-        transforms.Normalize(mean=[0.5], std=[0.5])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
     train_dataset = ImageFolder(root=f"datasets/{dataset}/train", transform=train_transform)
@@ -194,8 +196,8 @@ def main():
     if is_checkpoint:
         with open(report_path, "a") as report_file:
             report_file.write("Valid Set Metrics:\n")
-            report_file.write(f"Accuracy: {balanced_accuracy:.6f}\n")
-            report_file.write(f"Balanced Accuracy: {accuracy:.6f}\n")
+            report_file.write(f"Accuracy: {accuracy:.6f}\n")
+            report_file.write(f"Balanced Accuracy: {balanced_accuracy:.6f}\n")
             report_file.write(f"Macro Avg Precision: {macro_avg_precision:.6f}\n")
             report_file.write(f"Macro Avg F1 Score: {macro_avg_f1_score:.6f}\n")
  

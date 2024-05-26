@@ -10,7 +10,7 @@ import re
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torchvision.datasets import ImageFolder
 
-from transformers import ViTForImageClassification, ViTConfig
+from transformers import ViTForImageClassification, ViTConfig, DeiTForImageClassification
 
 class TrainConfigParser():
 
@@ -63,13 +63,14 @@ class TrainConfigParser():
             model.fc = nn.Linear(in_features=1024, out_features=num_classes)
         elif model_name == 'vit':
             if pretrained:
-                model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224', 
+                model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224',
                                                                     num_labels=num_classes,
                                                                     ignore_mismatched_sizes=True)
             else:
                 config = ViTConfig()
                 config.num_labels = num_classes
                 model = ViTForImageClassification(config)
+      
         else:
             raise ValueError(f"Unsupported model name: {model_name}")
 
@@ -152,7 +153,7 @@ class TrainConfigParser():
             return operator.lt
         else:
             raise ValueError(f"Unsupported metric: {metric_name}")
-
+    
 
 class MetricPlotterConfigParser():
 

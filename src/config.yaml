@@ -5,7 +5,7 @@ batch_size: 64
 max_num_epochs: 50
 
 model:
-  name: vit
+  name: vit #vit # deit
   pretrained: true
   fine_tune: true  # If true, fine-tune the entire model; if false, freeze earlier layers
   freeze_until: none  # Options could be "all", "none", or specific layer like "layer4"
