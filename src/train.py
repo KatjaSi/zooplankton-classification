@@ -37,12 +37,18 @@ def main():
     is_checkpoint = parser.is_checkpoint()
     early_stopping_metric = parser.get_early_stopping_metric()
     compare_op = parser.get_compare_operator()
+    mean = parser.get_transforms_normalize_mean()
+    std = parser.get_transforms_normalize_std()
 
     # early stopping
     best_metric = float('-inf') if early_stopping_metric in ["accuracy", "balanced_accuracy"] else float('inf')
     best_model_weights = None
     patience = parser.get_patience()
     best_epoch = 0
+    best_val_accuracy = float('-inf')
+    best_val_balanced_accuracy = float('-inf')
+    best_val_macro_avg_precision = float('-inf')
+    best_val_macro_avg_f1_score = float('-inf')
 
     checkpoint_path = os.path.join('checkpoints',
                                     parser.get_model_name(),
@@ -69,7 +75,7 @@ def main():
         #transforms.Grayscale(num_output_channels=1),
         #transforms.Lambda(apply_clahe),
         #transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=mean, std=std)
     ])
 
     val_transform = transforms.Compose([
@@ -80,7 +86,7 @@ def main():
         #transforms.Grayscale(num_output_channels=1),
        # transforms.Lambda(apply_clahe),
         #transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=mean, std=std)
     ])
 
     train_dataset = ImageFolder(root=f"datasets/{dataset}/train", transform=train_transform)
@@ -185,6 +191,11 @@ def main():
             best_model_weights = copy.deepcopy(model.state_dict())
             best_epoch = epoch + 1
             patience_count = patience
+
+            best_val_accuracy = accuracy
+            best_val_balanced_accuracy = balanced_accuracy
+            best_val_macro_avg_precision = macro_avg_precision
+            best_val_macro_avg_f1_score = macro_avg_f1_score
         else:
             patience_count -= 1
             if patience_count == 0:
@@ -196,10 +207,10 @@ def main():
     if is_checkpoint:
         with open(report_path, "a") as report_file:
             report_file.write("Valid Set Metrics:\n")
-            report_file.write(f"Accuracy: {accuracy:.6f}\n")
-            report_file.write(f"Balanced Accuracy: {balanced_accuracy:.6f}\n")
-            report_file.write(f"Macro Avg Precision: {macro_avg_precision:.6f}\n")
-            report_file.write(f"Macro Avg F1 Score: {macro_avg_f1_score:.6f}\n")
+            report_file.write(f"Accuracy: {best_val_accuracy:.6f}\n")
+            report_file.write(f"Balanced Accuracy: {best_val_balanced_accuracy:.6f}\n")
+            report_file.write(f"Macro Avg Precision: {best_val_macro_avg_precision:.6f}\n")
+            report_file.write(f"Macro Avg F1 Score: {best_val_macro_avg_f1_score:.6f}\n")
  
     # test
     model.load_state_dict(best_model_weights)

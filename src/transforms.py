@@ -5,8 +5,8 @@ import torchvision.transforms.functional as F
 from PIL import Image
 
 def apply_clahe(img):
-    img_np = img.numpy().squeeze() * 255.0  
-    img_np = img_np.astype('uint8')  
+    img_np = img.numpy().squeeze() * 255.0
+    img_np = img_np.astype('uint8')
     clahe = cv2.createCLAHE()
     img_clahe = clahe.apply(img_np)
     img_clahe = torch.from_numpy(img_clahe).float() / 255.0
@@ -15,7 +15,7 @@ def apply_clahe(img):
 
     return img_clahe
 
-def resize_and_pad(img, size=224, fill=1, padding_mode='constant'):
+def resize_and_pad(img, size=224, fill=0, padding_mode='constant'):
     aspect_ratio = img.width / img.height
     if img.width > img.height:
         new_width = size

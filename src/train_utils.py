@@ -22,7 +22,7 @@ def one_iter(model, criterion, loader, device, train=True, optimizer=None, sched
         if optimizer is not None:
             optimizer.zero_grad()
         outputs = model(data)
-        if (model_name == "vit"):
+        if (model_name in ["vit", "deit", "swin"]):
             outputs = outputs.logits
         loss = criterion(outputs, labels)
         if train:

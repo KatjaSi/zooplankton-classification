@@ -11,6 +11,9 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torchvision.datasets import ImageFolder
 
 from transformers import ViTForImageClassification, ViTConfig, DeiTForImageClassification
+from transformers import  DeiTForImageClassification, DeiTConfig, DeiTForImageClassificationWithTeacher
+from transformers import SwinForImageClassification, SwinConfig
+
 
 class TrainConfigParser():
 
@@ -45,6 +48,9 @@ class TrainConfigParser():
     def get_report_frequency(self):
         return self.config['reports']['frequency']
 
+    def is_model_distilled(self):
+        return self.config['distilled']
+
     def get_model(self):
         model_name = self.config['model']['name']
         pretrained = self.config['model']['pretrained']
@@ -63,14 +69,45 @@ class TrainConfigParser():
             model.fc = nn.Linear(in_features=1024, out_features=num_classes)
         elif model_name == 'vit':
             if pretrained:
-                model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224',
+                model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224-in21k', #'google/vit-base-patch16-224',
                                                                     num_labels=num_classes,
                                                                     ignore_mismatched_sizes=True)
             else:
                 config = ViTConfig()
                 config.num_labels = num_classes
                 model = ViTForImageClassification(config)
-      
+        elif model_name == 'deit':
+            distilled = self.is_model_distilled()
+            if distilled:
+                if pretrained:
+                    model = DeiTForImageClassificationWithTeacher.from_pretrained(
+                        'facebook/deit-base-distilled-patch16-224',
+                        num_labels=num_classes,
+                        ignore_mismatched_sizes=True
+                    )
+                else:
+                    config = DeiTConfig()
+                    config.num_labels = num_classes
+                    model = DeiTForImageClassificationWithTeacher(config)
+            else:
+                if pretrained:
+                    model = DeiTForImageClassification.from_pretrained('facebook/deit-base-distilled-patch16-224',
+                                                                       num_labels=num_classes,
+                                                                      ignore_mismatched_sizes=True)
+                else:
+                    config = DeiTConfig()
+                    config.num_labels = num_classes
+                    model = DeiTForImageClassification(config)
+        elif model_name == "swin":
+            if pretrained:
+                model = SwinForImageClassification.from_pretrained("microsoft/swin-base-patch4-window7-224",
+                                                                    num_labels=num_classes,
+                                                                    ignore_mismatched_sizes=True)
+            else:
+                config = SwinConfig()
+                config.num_labels = num_classes
+                model = SwinForImageClassification(config)
+
         else:
             raise ValueError(f"Unsupported model name: {model_name}")
 
@@ -137,6 +174,8 @@ class TrainConfigParser():
             'scheduler': self.config['scheduler'],
             'dataset': self.get_dataset_name()
         }
+        if self.is_model_distilled() is not None:
+            training_parameters['distilled'] = self.is_model_distilled()
         if best_epoch is not None:
             training_parameters['best_epoch'] = best_epoch
         with open(file_path, 'w') as json_file:
@@ -153,6 +192,12 @@ class TrainConfigParser():
             return operator.lt
         else:
             raise ValueError(f"Unsupported metric: {metric_name}")
+
+    def get_transforms_normalize_mean(self):
+        return self.config['transforms']['normalize']['mean']
+    
+    def get_transforms_normalize_std(self):
+        return self.config['transforms']['normalize']['std']
     
 
 class MetricPlotterConfigParser():
