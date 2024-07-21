@@ -1,11 +1,12 @@
 import numpy as np
 import sklearn.metrics as metrics
-from parsers import TrainConfigParser
+import ipdb
 
 
 def one_iter(model, criterion, loader, device, train=True, optimizer=None, scheduler=None, monitoring_metrics=list()):
-    parser = TrainConfigParser()
-    model_name = parser.get_model_name()
+    #parser = TrainConfigParser()
+    #model_name = parser.get_model_name()
+    model_name = model.__class__.__name__ 
     running_loss = 0.0
     count = 0.0
     if train:
@@ -22,7 +23,8 @@ def one_iter(model, criterion, loader, device, train=True, optimizer=None, sched
         if optimizer is not None:
             optimizer.zero_grad()
         outputs = model(data)
-        if (model_name in ["vit", "deit", "swin"]):
+        if hasattr(model.module, 'config') and hasattr(model.module.config, 'model_type') \
+            and (model.module.config.model_type in ["vit", "deit", "swin", "vit_mae"]):
             outputs = outputs.logits
         loss = criterion(outputs, labels)
         if train:

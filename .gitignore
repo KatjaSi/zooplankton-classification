@@ -9,3 +9,9 @@ COP6_Caligidae/
 plots/
 temp.py
 src/analysis.py
+checkpoints_mae/
+wandb/
+*.pth
+*.pyc
+*.csv
+

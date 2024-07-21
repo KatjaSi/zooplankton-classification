@@ -4,22 +4,25 @@ import torchvision.transforms as transforms
 import numpy as np
 import shutil
 import os
+import albumentations as A
+import cv2
+from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
 from torch.utils.data import WeightedRandomSampler
 from plots import plot_confusion_matrix
 from parsers import TrainConfigParser # type: ignore
-from transforms import apply_clahe, resize_and_pad
+from transforms import apply_clahe, resize_and_pad, ResizeAndPad
 from datetime import datetime
-
+from transformers import ViTMAEModel, ViTForImageClassification, ViTConfig, ViTMAEForPreTraining
 import torch.optim as optim
 
-import os
 import pandas as pd
 import copy
-
+import ipdb
 
 from train_utils import one_iter
+from dataset import ZooScanImageFolder
 
 
 def main():
@@ -64,34 +67,39 @@ def main():
     best_model_path = os.path.join(checkpoint_path, "best_model.pth")
     report_path = os.path.join(checkpoint_path, "report.txt")
 
-    train_transform = transforms.Compose([
-       # transforms.Resize(256),
-       # transforms.CenterCrop(224),
-        transforms.RandomHorizontalFlip(),
-        #transforms.RandomRotation(180),
-        transforms.Lambda(lambda img: resize_and_pad(img, fill=255)),
-        transforms.RandomAffine(180, (0.1, 0.1), fill=255), # rotation + translation
-        transforms.ToTensor(),
-        #transforms.Grayscale(num_output_channels=1),
-        #transforms.Lambda(apply_clahe),
-        #transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
-        transforms.Normalize(mean=mean, std=std)
+
+    train_transform = A.Compose([
+        ResizeAndPad(224, fill=255), 
+        A.OneOf([
+                            A.HorizontalFlip(p=0.5),
+                            A.RandomRotate90(p=0.5),
+                            A.VerticalFlip(p=0.5),
+                            A.Rotate(limit=(-90, 90), border_mode=cv2.BORDER_CONSTANT, value=(255, 255, 255), p=1)
+        ], p=1),
+        A.ShiftScaleRotate(shift_limit=0.1,
+                            scale_limit=0.15,rotate_limit=0,
+                            border_mode=cv2.BORDER_CONSTANT,
+                            value=(255, 255, 255), p=1),
+        A.OneOf([
+                            A.MotionBlur(p=0.5),
+                            A.OpticalDistortion(p=0.5),
+                            A.GaussNoise(p=0.5),
+                            A.CoarseDropout(max_holes=16, fill_value=255, hole_height_range=(8, 20), hole_width_range=(8, 20), p=0.5), 
+                            A.Defocus(radius=(1, 3), alias_blur=(0.1, 0.3), p=0.3),           
+        ], p=1),
+        A.ColorJitter(brightness=(0.8, 1.2), contrast=(0.8, 1.2), saturation=(0.8, 1.2), hue=(-0.2, 0.2), p=0.3),
+        A.Normalize(mean=mean, std=std),
+        ToTensorV2() ])
+
+    val_transform = A.Compose([
+        ResizeAndPad(size=224, fill=255),
+        A.Normalize(mean=mean, std=std),
+        ToTensorV2()
     ])
 
-    val_transform = transforms.Compose([
-        transforms.Lambda(lambda img: resize_and_pad(img, fill=255)),
-       # transforms.Resize(256),
-       # transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        #transforms.Grayscale(num_output_channels=1),
-       # transforms.Lambda(apply_clahe),
-        #transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
-        transforms.Normalize(mean=mean, std=std)
-    ])
-
-    train_dataset = ImageFolder(root=f"datasets/{dataset}/train", transform=train_transform)
-    val_dataset = ImageFolder(root=f"datasets/{dataset}/val", transform=val_transform)
-    test_dataset  = ImageFolder(root=f"datasets/{dataset}/test", transform=val_transform)
+    train_dataset = ZooScanImageFolder(root=f"datasets/{dataset}/train", transform=train_transform)
+    val_dataset = ZooScanImageFolder(root=f"datasets/{dataset}/val", transform=val_transform)
+    test_dataset  = ZooScanImageFolder(root=f"datasets/{dataset}/test", transform=val_transform)
 
     if is_enable_report:
         columns = ["Epoch", "Class ID", "Recall", "Precision", "F1_Score"] \
@@ -111,10 +119,16 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
-    model = parser.get_model().to(device)
-    model = nn.DataParallel(model) 
+    #model = parser.get_model().to(device)
+    # google/vit-base-patch16-224-in21k facebook/vit-mae-base
+    #model = ViTForImageClassification.from_pretrained("facebook/vit-mae-base", num_labels=77, ignore_mismatched_sizes=True)
+    config = ViTConfig(num_labels=77)
+    model = ViTForImageClassification(config)
+    state_dict = torch.load("best_model.pth")
+    model.load_state_dict(state_dict,  strict=False)
+    model = nn.DataParallel(model)
     criterion = nn.CrossEntropyLoss()
-    optimizer = parser.get_optimizer(model) 
+    optimizer = parser.get_optimizer(model)
     scheduler = parser.get_scheduler(optimizer)
     num_epochs = max_num_epochs
     patience_count = patience

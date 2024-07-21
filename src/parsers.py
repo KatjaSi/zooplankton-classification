@@ -7,6 +7,7 @@ import json
 import operator
 import os
 import re
+import timm
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torchvision.datasets import ImageFolder
 
@@ -109,7 +110,8 @@ class TrainConfigParser():
                 model = SwinForImageClassification(config)
 
         else:
-            raise ValueError(f"Unsupported model name: {model_name}")
+            model = timm.create_model(model_name, pretrained=pretrained, num_classes=77)
+            #raise ValueError(f"Unsupported model name: {model_name}")
 
         if not self.config['model']['fine_tune']:
             found_layer = False
