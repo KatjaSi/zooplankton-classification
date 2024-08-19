@@ -1,0 +1,54 @@
+### group_name
+group: VIT_MAE_PRETRAINING_10_one_channel_norm_pix_loss
+
+### dataset ###
+dataset:
+  train: datasets/ZooScan77_010/train
+  val: datasets/ZooScan77_small/val
+
+
+### hyperparams
+
+transforms:
+  normalize:
+    mean: 0.9044
+    std:  0.1485
+
+eval_every_x_steps: 300
+
+num_epochs: 15
+
+learning_rate_range:
+  min: 1e-6
+  max: 1e-3
+
+optimizers:
+  - AdamW
+
+momentum: # momentum in sgd or beta l in adam(W)
+  min: 0.82
+  max: 0.95
+
+beta2: # in adam(W)
+  min: 0.98
+  max: 0.999
+
+batch_size_range: # [4, 8, ... 128]
+  min: 8
+  max: 64
+
+weight_decay:
+  min: 1e-8
+  max: 5e-2
+
+warmup_fraction:
+  min: 1e-4
+  max: 0.1
+
+warmup_epochs:
+  min: 0.0
+  max: 5.0
+
+storage: sqlite:///pretraining/optimize/storage/optuna_study_010_one_channel:norm_pix_loss.db
+wandb_project: optuna_10_procent_1_channel_norm_pix_loss
+

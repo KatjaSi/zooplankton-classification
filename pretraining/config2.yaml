@@ -1,0 +1,6 @@
+transforms:
+  normalize:
+    mean: 0.9044
+    std:  0.1485
+
+eval_every_x_steps: 500

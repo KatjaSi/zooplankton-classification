@@ -1,0 +1,6 @@
+README.md
+setup.py
+zooplankton_classification.egg-info/PKG-INFO
+zooplankton_classification.egg-info/SOURCES.txt
+zooplankton_classification.egg-info/dependency_links.txt
+zooplankton_classification.egg-info/top_level.txt
