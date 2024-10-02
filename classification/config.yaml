@@ -33,12 +33,12 @@ early_stopping:
   patience: 5
 
 reports:
-  enable: true
+  enable: false
   frequency: 1
 
 #augmentations:
 
 
-checkpoint: true # save model and training parameters
+checkpoint: false # save model and training parameters
 
 dataset: ZooScan77_small

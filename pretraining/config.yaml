@@ -3,4 +3,4 @@ transforms:
     mean: [0.9044, 0.9044, 0.9044] 
     std:  [0.1485, 0.1485, 0.1485]
 
-eval_every_x_steps: 10000
+eval_every_x_steps: 1000 # 10000

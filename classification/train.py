@@ -31,7 +31,7 @@ def main():
 
     device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
 
-    batch_size = parser.get_batch_size()
+    batch_size = parser.get_batch_size()*torch.cuda.device_count()
     max_num_epochs = parser.get_max_num_epochs()
     dataset = parser.get_dataset_name()
     is_enable_report = parser.is_enable_report()
@@ -53,19 +53,19 @@ def main():
     best_val_macro_avg_precision = float('-inf')
     best_val_macro_avg_f1_score = float('-inf')
 
-    checkpoint_path = os.path.join('checkpoints',
-                                    parser.get_model_name(),
-                                    datetime.now().strftime('%Y-%m-%d-%H-%M'))
+    #checkpoint_path = os.path.join('checkpoints',
+     #                               'vit-mae-large_hsm',#parser.get_model_name(),
+      #                              datetime.now().strftime('%Y-%m-%d-%H-%M'))
 
-    if os.path.exists(checkpoint_path):
-        shutil.rmtree(checkpoint_path)
-    if is_enable_report or is_checkpoint:
-        os.makedirs(checkpoint_path)
+    #if os.path.exists(checkpoint_path):
+     #   shutil.rmtree(checkpoint_path)
+    #if is_enable_report or is_checkpoint:
+     #   os.makedirs(checkpoint_path)
 
-    training_parameters_path = os.path.join(checkpoint_path, 'training_parameters')
-    stats_df_path = os.path.join(checkpoint_path, 'stats_df.csv')
-    best_model_path = os.path.join(checkpoint_path, "best_model.pth")
-    report_path = os.path.join(checkpoint_path, "report.txt")
+    #training_parameters_path = os.path.join(checkpoint_path, 'training_parameters')
+    #stats_df_path = os.path.join(checkpoint_path, 'stats_df.csv')
+    #best_model_path = os.path.join(checkpoint_path, "best_model.pth")
+    #report_path = os.path.join(checkpoint_path, "report.txt")
 
 
     train_transform = A.Compose([
@@ -74,7 +74,7 @@ def main():
                             A.HorizontalFlip(p=0.5),
                             A.RandomRotate90(p=0.5),
                             A.VerticalFlip(p=0.5),
-                            A.Rotate(limit=(-90, 90), border_mode=cv2.BORDER_CONSTANT, value=(255, 255, 255), p=1)
+                           # A.Rotate(limit=(-90, 90), border_mode=cv2.BORDER_CONSTANT, value=(255, 255, 255), p=1)
         ], p=1),
         A.ShiftScaleRotate(shift_limit=0.1,
                             scale_limit=0.15,rotate_limit=0,
@@ -101,10 +101,10 @@ def main():
     val_dataset = ZooScanImageFolder(root=f"datasets/{dataset}/val", transform=val_transform, grayscale=True)
     test_dataset  = ZooScanImageFolder(root=f"datasets/{dataset}/test", transform=val_transform, grayscale=True)
 
-    if is_enable_report:
-        columns = ["Epoch", "Class ID", "Recall", "Precision", "F1_Score"] \
-                    +  [f"Misclassification {i+1}" for i in range(len(val_dataset.classes))]
-        stats_df = pd.DataFrame(columns=columns)
+    #if is_enable_report:
+     #   columns = ["Epoch", "Class ID", "Recall", "Precision", "F1_Score"] \
+      #              +  [f"Misclassification {i+1}" for i in range(len(val_dataset.classes))]
+      #  stats_df = pd.DataFrame(columns=columns)
 
 
     # weighted random sampler
@@ -122,6 +122,11 @@ def main():
     #model = parser.get_model().to(device)
     # google/vit-base-patch16-224-in21k facebook/vit-mae-base
     #model = ViTForImageClassification.from_pretrained("facebook/vit-mae-base", num_labels=77, ignore_mismatched_sizes=True)
+
+    state_dict = torch.load("checkpoints_mae_2/best_model_test_53000.pth") # best 53000
+    #state_dict_mae  = state_dict_mae['model_state_dict']
+
+    ###
     config = ViTConfig(
         num_labels=77,
         num_channels=1,
@@ -132,9 +137,16 @@ def main():
         ignore_mismatched_sizes=True
     )
     model = ViTForImageClassification(config)
+ 
+    
+    model.load_state_dict(state_dict, strict=False)
+   
+    #state_dict = torch.load("best_model_phase2_3.pth")
+   # state_dict = torch.load("best_model_phase1_acc_batch_256.pth")
+    #model.load_state_dict(state_dict, strict=False)
+    #model.vit.load_state_dict(state_dict)
+   # model.load_state_dict(state_dict, strict=False)
     model.to(device)
-    state_dict = torch.load("best_model_phase1.pth")
-    model.load_state_dict(state_dict,  strict=False)
     model = nn.DataParallel(model)
     criterion = nn.CrossEntropyLoss()
     optimizer = parser.get_optimizer(model)
