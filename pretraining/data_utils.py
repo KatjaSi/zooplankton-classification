@@ -53,3 +53,17 @@ def get_dataloader(root, transform, batch_size, num_workers):
     sampler = WeightedRandomSampler(weights, len(weights))
     dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
     return dataloader
+
+def get_standard_imagenet_transform(mean, std):
+    transform = A.Compose([
+        A.Resize(256, 256, p=1.0),       
+        A.CenterCrop(224, 224, p=1.0), 
+         A.OneOf([
+                A.HorizontalFlip(p=0.5),
+                A.RandomRotate90(p=0.5),
+                A.VerticalFlip(p=0.5),
+            ], p=1),   
+        A.Normalize(mean=mean, std=std),
+        ToTensorV2()
+    ])
+    return transform

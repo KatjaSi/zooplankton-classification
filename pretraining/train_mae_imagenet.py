@@ -13,23 +13,27 @@ from datetime import datetime
 
 import torch.optim as optim
 import ipdb
-from common.dataset import ZooScanImageFolder
+from common.dataset import ImagenetDataset
 from common.scheduler import CosineAnnealingWithWarmUp
 from transformers import AutoImageProcessor, ViTMAEForPreTraining, ViTFeatureExtractor, ViTMAEConfig
 from tqdm import tqdm
 import yaml
 
-from visualize import visualize, visualize_2
-from data_utils import get_dataloader, get_default_train_transform, get_default_val_transform
+from visualize import visualize
+from data_utils import get_dataloader, get_default_train_transform, get_default_val_transform, get_standard_imagenet_transform
 from util.checkpointing import save_checkpoint
 
 import wandb
 
+from datasets import load_dataset
+from huggingface_hub import login
+
+login('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')
 
 with open("pretraining/config.yaml", 'r') as file:
     config = yaml.safe_load(file)
-    mean = config['transforms']['normalize']['mean']
-    std = config['transforms']['normalize']['std']
+    mean = [0.485, 0.456, 0.406]
+    std = [0.229, 0.224, 0.225]
     steps = config['eval_every_x_steps']
 
 def main():
@@ -40,16 +44,17 @@ def main():
     num_gpus = torch.cuda.device_count()
     gpu_names = [torch.cuda.get_device_name(i) for i in range(num_gpus)]
     wandb.init(
-    project="vit_mae_pretraining_base_npl_false",
+    project="vit_mae_pretraining_imagenet_base_npl",
     entity="katja-sivertsen",
     config={
-        "model": "ViT_MAE_base_npl_false",
+        "model": "ViT_MAE_base_npl_true",
         "num_gpus": num_gpus,
-        "gpu_names": gpu_names
+        "gpu_names": gpu_names,
+         "dataset": "imagenet"
     })
     batch_size = 16*4
     max_num_epochs = 12
-    config = ViTMAEConfig(norm_pix_loss = False,  
+    config = ViTMAEConfig(norm_pix_loss = True, 
                             mask_ratio = 0.75,
                             #hidden_size = 1024,
                             #intermediate_size = 4096,
@@ -57,29 +62,30 @@ def main():
                             #num_hidden_layers = 24,
                             num_channels = 1
                         )
-    dataset1 = ZooScanImageFolder(root="datasets/ZooScan77/train", transform=get_default_train_transform(mean, std), grayscale=True)
-    dataset2 = ZooScanImageFolder(root="datasets/PELGAS", transform=get_default_train_transform(mean, std), grayscale=True)
-    dataset3 = ZooScanImageFolder(root="datasets/ZooScan2018", transform=get_default_train_transform(mean, std), grayscale=True)
-    combined_dataset = ConcatDataset([dataset1, dataset2, dataset3])
-    train_dataloader = DataLoader(combined_dataset, batch_size=batch_size, shuffle=True, num_workers=20)
-    val_dataloader = get_dataloader(root="datasets/ZooScan77_small/val", 
-                                        transform=get_default_val_transform(mean, std),
-                                        batch_size=batch_size,
-                                        num_workers=4)
+
+    train_transform = get_standard_imagenet_transform(mean=[0.456], std=[0.224])
+    val_transform = get_default_val_transform(mean=[0.456], std=[0.224])
+    train_dataset = ImagenetDataset(dataset=load_dataset('ILSVRC/imagenet-1k', split='train', trust_remote_code=True),
+                                    transform=train_transform)
+    val_dataset = ImagenetDataset(dataset=load_dataset('ILSVRC/imagenet-1k', split='validation', trust_remote_code=True),
+                                    transform=val_transform)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=20)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=20)
     
-    checkpoint = torch.load("checkpoints/checkpoints_mae_base/checkpoints/checkpoint_196000.pth")
+    
+    
+    best_loss = float('inf')
+
+    checkpoint = torch.load("checkpoints/checkpoints_mae_base_npl_imagenet/checkpoint_219000.pth")
     model_state_dict = checkpoint['model_state_dict']
     optimizer_state_dict = checkpoint['optimizer_state_dict']
     scheduler_state_dict = checkpoint['scheduler_state_dict']
     start_epoch = checkpoint['epoch']
     step_count = checkpoint['step']
     best_loss = checkpoint['best_loss']
-    
-
     model = ViTMAEForPreTraining(config).to(device) # use the same parameters as mael-large
     model.load_state_dict(model_state_dict)
     model = nn.DataParallel(model)
-    
     
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.000164746, weight_decay=0.0, betas=(0.845, 0.985)) # lr = 1e-5
     scheduler = CosineAnnealingWithWarmUp(warmup_steps=len(train_dataloader)*1.0,
@@ -87,15 +93,14 @@ def main():
                                             optimizer=optimizer,
                                             warmup_fraction=0.05,
                                             eta_min=0.00002)
-    
     optimizer.load_state_dict(optimizer_state_dict)
     scheduler.load_state_dict(scheduler_state_dict)
-    best_loss = float('inf')
-
+   
     num_epochs = max_num_epochs
-    for epoch in range(start_epoch, num_epochs):  
+    #step_count = 0
+    #start_epoch = 0
+    for epoch in range(start_epoch, num_epochs):  # Number of epochs
         model.train()
-       # total_loss = 0
         step_total_loss = 0
         progress_bar = tqdm(train_dataloader, desc=f"Epoch {epoch + 1}/{num_epochs}")
         # Determine how many batches to skip if resuming mid-epoch
@@ -103,9 +108,9 @@ def main():
             skip_batches = step_count % len(train_dataloader)
         else:
             skip_batches = 0
-            #total_loss = 0
+            total_loss = 0
         for i, (images, _) in enumerate(progress_bar):
-            # Skip batches if resuming mid-epoch
+            
             if i < skip_batches:
                 continue
             step_count += 1
@@ -135,7 +140,7 @@ def main():
                 print(f"Step {step_count}, Valid Loss: {avg_val_loss}")
                 if avg_val_loss < best_loss:
                     best_loss = avg_val_loss
-                    torch.save(model.module.state_dict(), f"checkpoints/checkpoints_mae_base/checkpoints/best_model_test_{step_count}.pth")
+                    torch.save(model.module.state_dict(), f"checkpoints/checkpoints_mae_base_npl_imagenet/best_model_test_{step_count}.pth")
                     print(f"Best model saved with loss: {best_loss}")
                 # saving model.midule, need to be loaded before wrapping in data parallel
                 save_checkpoint(model.module, 
@@ -144,23 +149,10 @@ def main():
                                 epoch, 
                                 step_count, 
                                 best_loss,
-                                f"checkpoints/checkpoints_mae_base/checkpoints/checkpoint_{step_count}.pth")
-                
-                # vizualizations
-                indices = random.sample(range(len(val_dataloader.dataset)), 16)
-                epoch_folder = os.path.join("checkpoints/checkpoints_mae_base/vizualizations", 
-                f"epoch{epoch+1}", f"step_count_{step_count}")
-                os.makedirs(os.path.join(epoch_folder), exist_ok=True)
-                for idx in indices:
-                    save_path = os.path.join(epoch_folder, f"image_{idx}.png")
-                    img, _ = val_dataloader.dataset[idx]
-                    img = img.unsqueeze(0).to(device)
-                    visualize_2(img, model.module, save_path, np.array(mean), np.array(std))
-
+                                f"checkpoints/checkpoints_mae_base_npl_imagenet/checkpoint_{step_count}.pth")
                 wandb.log({
                     "step": step_count,
                         "valid_loss": avg_val_loss,
-                        "train_loss": step_total_loss / steps,
                         'lr': optimizer.param_groups[0]['lr']
                     })
                 model.train()

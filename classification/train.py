@@ -79,15 +79,15 @@ def main():
         A.ShiftScaleRotate(shift_limit=0.1,
                             scale_limit=0.15,rotate_limit=0,
                             border_mode=cv2.BORDER_CONSTANT,
-                            value=(255, 255, 255), p=1),
+                            value=(255, 255, 255), p=0),
         A.OneOf([
                             A.MotionBlur(p=0.5),
                             A.OpticalDistortion(p=0.5),
                             A.GaussNoise(p=0.5),
                             A.CoarseDropout(max_holes=16, fill_value=255, hole_height_range=(8, 20), hole_width_range=(8, 20), p=0.5), 
-                            A.Defocus(radius=(1, 3), alias_blur=(0.1, 0.3), p=0.3),           
-        ], p=1),
-        A.ColorJitter(brightness=(0.8, 1.2), contrast=(0.8, 1.2), saturation=(0.8, 1.2), hue=(-0.2, 0.2), p=0.3),
+                            A.Defocus(radius=(1, 3), alias_blur=(0.1, 0.3), p=0),           
+        ], p=0),
+        A.ColorJitter(brightness=(0.8, 1.2), contrast=(0.8, 1.2), saturation=(0.8, 1.2), hue=(-0.2, 0.2), p=0),
         A.Normalize(mean=mean, std=std),
         ToTensorV2() ])
 
@@ -115,15 +115,18 @@ def main():
     weights = class_weights[train_labels]
     sampler = WeightedRandomSampler(weights, len(weights))
     
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=sampler, num_workers=10)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=10)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=10)
 
     #model = parser.get_model().to(device)
     # google/vit-base-patch16-224-in21k facebook/vit-mae-base
-    #model = ViTForImageClassification.from_pretrained("facebook/vit-mae-base", num_labels=77, ignore_mismatched_sizes=True)
+    #model = ViTForImageClassification.from_pretrained("facebook/vit-mae-large", num_labels=77, ignore_mismatched_sizes=True)
 
-    state_dict = torch.load("checkpoints_mae_2/best_model_test_53000.pth") # best 53000
+    #state_dict = torch.load("checkpoints_mae_large_npl/swa_final_model.pth")
+    state_dict = torch.load("checkpoints_mae_large_npl_imagenet/swa_final_model.pth")
+    #state_dict = checkpoint['model_state_dict']
+    #state_dict = torch.load("checkpoints_mae_large_npl/best_model_test_248000.pth") # best 190000
     #state_dict_mae  = state_dict_mae['model_state_dict']
 
     ###
@@ -138,16 +141,16 @@ def main():
     )
     model = ViTForImageClassification(config)
  
-    
-    model.load_state_dict(state_dict, strict=False)
+
+    #model.load_state_dict(state_dict, strict=False)
    
-    #state_dict = torch.load("best_model_phase2_3.pth")
-   # state_dict = torch.load("best_model_phase1_acc_batch_256.pth")
+
     #model.load_state_dict(state_dict, strict=False)
     #model.vit.load_state_dict(state_dict)
-   # model.load_state_dict(state_dict, strict=False)
+    #model.load_state_dict(state_dict, strict=False)
     model.to(device)
     model = nn.DataParallel(model)
+    model.load_state_dict(state_dict, strict=False)
     criterion = nn.CrossEntropyLoss()
     optimizer = parser.get_optimizer(model)
     scheduler = parser.get_scheduler(optimizer)

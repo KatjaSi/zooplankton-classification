@@ -5,6 +5,35 @@ import albumentations as A
 from PIL import Image
 import numpy as np
 
+from torchvision.transforms import functional as F
+from torchvision.transforms import InterpolationMode
+
+class ResizeAndPadTorch:
+    def __init__(self, size=224, fill=0):
+        self.size = size
+        self.fill = fill
+
+    def __call__(self, img):
+        width, height = img.size
+        aspect_ratio = width / height
+        if width > height:
+            new_width = self.size
+            new_height = int(new_width / aspect_ratio)
+        else:
+            new_height = self.size
+            new_width = int(new_height * aspect_ratio)
+
+        img = F.resize(img, (new_height, new_width), InterpolationMode.BILINEAR)
+
+        padding_left = (self.size - new_width) // 2
+        padding_right = self.size - new_width - padding_left
+        padding_top = (self.size - new_height) // 2
+        padding_bottom = self.size - new_height - padding_top
+
+        # Apply padding
+        img = F.pad(img, (padding_left, padding_top, padding_right, padding_bottom), fill=self.fill)
+        return img
+
 def apply_clahe(img):
     img_np = img.numpy().squeeze() * 255.0
     img_np = img_np.astype('uint8')
@@ -74,3 +103,12 @@ class EnsurePositiveStrides(A.ImageOnlyTransform):
     def apply(self, img, **params):
         # Make a copy of the image to ensure positive strides
         return img.copy()
+
+def get_standard_imagenet_transform(mean, std):
+    transform = A.Compose([
+        A.Resize(256, 256, p=1.0),        
+        A.CenterCrop(224, 224, p=1.0),  
+        A.Normalize(mean=mean, std=std),
+        ToTensorV2()
+    ])
+    return transform
