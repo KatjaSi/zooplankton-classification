@@ -32,7 +32,7 @@ def main():
     device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
 
     batch_size = parser.get_batch_size()*torch.cuda.device_count()
-    max_num_epochs = parser.get_max_num_epochs()
+    max_num_epochs = 30 #parser.get_max_num_epochs()
     dataset = parser.get_dataset_name()
     is_enable_report = parser.is_enable_report()
     report_frequency = parser.get_report_frequency()
@@ -44,7 +44,7 @@ def main():
     std = parser.get_transforms_normalize_std()
 
     # early stopping
-    for i in range(6, 10):
+    for i in range(9, 10):
         best_metric = float('-inf') if early_stopping_metric in ["accuracy", "balanced_accuracy"] else float('inf')
         best_model_weights = None
         patience = parser.get_patience()

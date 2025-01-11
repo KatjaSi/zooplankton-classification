@@ -44,7 +44,7 @@ def main():
     std = parser.get_transforms_normalize_std()
 
     # early stopping
-    for i in range(11, 14):
+    for i in range(10):
         best_metric = float('-inf') if early_stopping_metric in ["accuracy", "balanced_accuracy"] else float('inf')
         best_model_weights = None
         patience = parser.get_patience()
@@ -55,7 +55,7 @@ def main():
         best_val_macro_avg_f1_score = float('-inf')
 
         checkpoint_path = os.path.join('checkpoints',
-                                        'swin_mixup_100', f"run_{i+1}") #,parser.get_model_name(),
+                                        'swin_manual_augs_after_contrastive_lp', f"run_{i+1}") #,parser.get_model_name(),
                                     #  datetime.now().strftime('%Y-%m-%d-%H-%M'))
 
         #if os.path.exists(checkpoint_path):
@@ -124,7 +124,16 @@ def main():
 
         model.to(device)
         model = nn.DataParallel(model)
-        #model.load_state_dict(state_dict, strict=False)
+        checkpoint = torch.load("checkpoints/swin_contrastive/best_checkpoint.pth")
+        model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+
+        # linear probing
+        for param in model.module.parameters():
+            param.requires_grad = False
+
+        for param in model.module.classifier.parameters():
+            param.requires_grad = True
+        # end linear probing
         criterion = nn.CrossEntropyLoss()
         optimizer =  torch.optim.AdamW(model.parameters(), lr=1e-5, weight_decay=1e-8)
         scheduler = None
@@ -143,14 +152,14 @@ def main():
                                     train=True, 
                                     optimizer=optimizer,
                                     scheduler=scheduler,
-                                    monitoring_metrics=['accuracy'],
-                                    mixup_alpha=1.0)
+                                    monitoring_metrics=['accuracy', 'balanced_accuracy'])
                 loss = result['loss']
                 accuracy = result['accuracy']
-              #  balanced_accuracy = result['balanced_accuracy']
+                balanced_accuracy = result['balanced_accuracy']
                 print(f"Epoch {epoch+1}, \
                     Train loss: {loss}, \
-                    train accuracy: {accuracy:.6f}")
+                    train accuracy: {accuracy:.6f},\
+                    balanced train accuracy: {balanced_accuracy:.6f}")
 
                 
                 ### validation ###
@@ -205,7 +214,7 @@ def main():
 
                     csv_writer.writerow([
                     epoch + 1,
-                    loss, accuracy, None,
+                    loss, accuracy, balanced_accuracy,
                     val_loss, val_accuracy, val_balanced_accuracy
                         ])
 
@@ -217,7 +226,7 @@ def main():
                     best_epoch = epoch + 1
                     patience_count = patience
 
-                    best_val_accuracy = accuracy
+                    best_val_accuracy = val_accuracy
                     best_val_balanced_accuracy = val_balanced_accuracy
                     best_val_macro_avg_precision = macro_avg_precision
                     best_val_macro_avg_f1_score = macro_avg_f1_score

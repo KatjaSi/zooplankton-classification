@@ -1,0 +1,541 @@
+{
+    "CLD1_Evadne": {
+        "num_samples": 1495,
+        "Recall": 0.9836,
+        "Precision": 0.6471,
+        "available_samples": 14951,
+        "sample_diff": 0
+    },
+    "COP14_Metridinidae": {
+        "num_samples": 1104,
+        "Recall": 0.9841,
+        "Precision": 0.9904,
+        "available_samples": 11043,
+        "sample_diff": 0
+    },
+    "COP12_Harpacticoida": {
+        "num_samples": 2012,
+        "Recall": 0.9298,
+        "Precision": 0.7681,
+        "available_samples": 2012,
+        "sample_diff": 0
+    },
+    "EUM2_Decapoda": {
+        "num_samples": 330,
+        "Recall": 0.65,
+        "Precision": 0.7647,
+        "available_samples": 330,
+        "sample_diff": 0
+    },
+    "COP8_Corycaeidae": {
+        "num_samples": 2313,
+        "Recall": 0.9324,
+        "Precision": 0.8922,
+        "available_samples": 7783,
+        "sample_diff": 0
+    },
+    "detritus": {
+        "num_samples": 11428,
+        "Recall": 0.8739,
+        "Precision": 0.9953,
+        "available_samples": 358190,
+        "sample_diff": 0
+    },
+    "COP23_Temoridae": {
+        "num_samples": 2313,
+        "Recall": 0.9066,
+        "Precision": 0.9538,
+        "available_samples": 6377,
+        "sample_diff": 0
+    },
+    "COP11_Euchaetidae": {
+        "num_samples": 416,
+        "Recall": 0.9783,
+        "Precision": 0.8333,
+        "available_samples": 1621,
+        "sample_diff": 0
+    },
+    "COP9_Ectinosomatidae": {
+        "num_samples": 416,
+        "Recall": 1.0,
+        "Precision": 0.92,
+        "available_samples": 818,
+        "sample_diff": 0
+    },
+    "MOL3_Creseidae": {
+        "num_samples": 1453,
+        "Recall": 0.9512,
+        "Precision": 0.5571,
+        "available_samples": 1453,
+        "sample_diff": 0
+    },
+    "EUM9_metanauplius": {
+        "num_samples": 70,
+        "Recall": 1.0,
+        "Precision": 1.0,
+        "available_samples": 130,
+        "sample_diff": 60
+    },
+    "TUN4_Salpida": {
+        "num_samples": 544,
+        "Recall": 0.9677,
+        "Precision": 0.5639,
+        "available_samples": 5440,
+        "sample_diff": 0
+    },
+    "COP22_Tachidiidae": {
+        "num_samples": 200,
+        "Recall": 0.9825,
+        "Precision": 0.9333,
+        "available_samples": 2009,
+        "sample_diff": 216
+    },
+    "COP10_Eucalanidae": {
+        "num_samples": 327,
+        "Recall": 0.9032,
+        "Precision": 0.8485,
+        "available_samples": 3275,
+        "sample_diff": 1986
+    },
+    "EUM7_Mysida": {
+        "num_samples": 70,
+        "Recall": 1.0,
+        "Precision": 1.0,
+        "available_samples": 620,
+        "sample_diff": 346
+    },
+    "Isopoda": {
+        "num_samples": 70,
+        "Recall": 0.7,
+        "Precision": 1.0,
+        "available_samples": 86,
+        "sample_diff": 16
+    },
+    "EUM5_Hyperiidea": {
+        "num_samples": 70,
+        "Recall": 0.9,
+        "Precision": 0.8571,
+        "available_samples": 416,
+        "sample_diff": 346
+    },
+    "COP13_Heterorhabdidae": {
+        "num_samples": 112,
+        "Recall": 0.9688,
+        "Precision": 0.9688,
+        "available_samples": 1124,
+        "sample_diff": 304
+    },
+    "TUN1_Fritillariidae": {
+        "num_samples": 179,
+        "Recall": 0.9412,
+        "Precision": 0.2652,
+        "available_samples": 1799,
+        "sample_diff": 1620
+    },
+    "Ostracoda": {
+        "num_samples": 1007,
+        "Recall": 0.9512,
+        "Precision": 0.9381,
+        "available_samples": 10074,
+        "sample_diff": 1306
+    },
+    "gonophore_Calycophorae": {
+        "num_samples": 67,
+        "Recall": 0.8421,
+        "Precision": 0.9412,
+        "available_samples": 67,
+        "sample_diff": 0
+    },
+    "TUN2_Oikopleuridae": {
+        "num_samples": 1435,
+        "Recall": 0.9512,
+        "Precision": 0.7091,
+        "available_samples": 14355,
+        "sample_diff": 878
+    },
+    "EUM3_Euphausiacea": {
+        "num_samples": 83,
+        "Recall": 0.9565,
+        "Precision": 0.8148,
+        "available_samples": 837,
+        "sample_diff": 333
+    },
+    "ANN_Juvenile": {
+        "num_samples": 213,
+        "Recall": 0.9508,
+        "Precision": 0.8788,
+        "available_samples": 2136,
+        "sample_diff": 1923
+    },
+    "MOL1_Bivalvia": {
+        "num_samples": 304,
+        "Recall": 1.0,
+        "Precision": 0.6744,
+        "available_samples": 3045,
+        "sample_diff": 112
+    },
+    "Actinopterygii": {
+        "num_samples": 113,
+        "Recall": 1.0,
+        "Precision": 0.7273,
+        "available_samples": 1135,
+        "sample_diff": 303
+    },
+    "EUM12_megalopa": {
+        "num_samples": 74,
+        "Recall": 1.0,
+        "Precision": 0.875,
+        "available_samples": 740,
+        "sample_diff": 342
+    },
+    "COP1_Acartiidae": {
+        "num_samples": 3274,
+        "Recall": 0.9914,
+        "Precision": 0.9687,
+        "available_samples": 32740,
+        "sample_diff": 0
+    },
+    "ECH2_Ophiopluteus": {
+        "num_samples": 70,
+        "Recall": 0.85,
+        "Precision": 0.9444,
+        "available_samples": 490,
+        "sample_diff": 420
+    },
+    "Chaetognatha": {
+        "num_samples": 2578,
+        "Recall": 0.9769,
+        "Precision": 0.8954,
+        "available_samples": 25780,
+        "sample_diff": -265
+    },
+    "EGG_eggsac": {
+        "num_samples": 70,
+        "Recall": 1.0,
+        "Precision": 0.9524,
+        "available_samples": 276,
+        "sample_diff": 206
+    },
+    "EUM11_protozoea": {
+        "num_samples": 28,
+        "Recall": 0.625,
+        "Precision": 0.7143,
+        "available_samples": 28,
+        "sample_diff": 0
+    },
+    "EUM10_zoea": {
+        "num_samples": 449,
+        "Recall": 0.9531,
+        "Precision": 0.9531,
+        "available_samples": 4496,
+        "sample_diff": 0
+    },
+    "EUM1_Cumacea": {
+        "num_samples": 70,
+        "Recall": 1.0,
+        "Precision": 1.0,
+        "available_samples": 378,
+        "sample_diff": 308
+    },
+    "COP20_Rhincalanidae": {
+        "num_samples": 94,
+        "Recall": 0.8462,
+        "Precision": 0.6471,
+        "available_samples": 941,
+        "sample_diff": 847
+    },
+    "COP17_Paracalanidae": {
+        "num_samples": 83,
+        "Recall": 0.9565,
+        "Precision": 0.8148,
+        "available_samples": 837,
+        "sample_diff": 333
+    },
+    "Ctenophora": {
+        "num_samples": 70,
+        "Recall": 0.9,
+        "Precision": 1.0,
+        "available_samples": 88,
+        "sample_diff": 18
+    },
+    "ANN_larva": {
+        "num_samples": 70,
+        "Recall": 0.5,
+        "Precision": 0.7692,
+        "available_samples": 496,
+        "sample_diff": 426
+    },
+    "CLD3_Podon": {
+        "num_samples": 103,
+        "Recall": 0.9655,
+        "Precision": 0.6667,
+        "available_samples": 1030,
+        "sample_diff": 313
+    },
+    "EGG_indet": {
+        "num_samples": 159,
+        "Recall": 0.8444,
+        "Precision": 0.8837,
+        "available_samples": 1597,
+        "sample_diff": 1438
+    },
+    "COP25_carcass": {
+        "num_samples": 1200,
+        "Recall": 0.9504,
+        "Precision": 0.9674,
+        "available_samples": 12006,
+        "sample_diff": 1113
+    },
+    "gonophore1_Diphyidae": {
+        "num_samples": 237,
+        "Recall": 0.9552,
+        "Precision": 0.4103,
+        "available_samples": 2379,
+        "sample_diff": 179
+    },
+    "COP24_nauplius": {
+        "num_samples": 752,
+        "Recall": 0.9579,
+        "Precision": 0.9318,
+        "available_samples": 7523,
+        "sample_diff": 0
+    },
+    "nectophore1_Diphyidae": {
+        "num_samples": 1007,
+        "Recall": 0.9965,
+        "Precision": 1.0,
+        "available_samples": 10072,
+        "sample_diff": 0
+    },
+    "Phoronida": {
+        "num_samples": 70,
+        "Recall": 0.95,
+        "Precision": 0.95,
+        "available_samples": 114,
+        "sample_diff": 44
+    },
+    "MOL5_Limacinidae": {
+        "num_samples": 449,
+        "Recall": 0.9766,
+        "Precision": 0.9843,
+        "available_samples": 4496,
+        "sample_diff": 0
+    },
+    "Cnidaria": {
+        "num_samples": 348,
+        "Recall": 0.9192,
+        "Precision": 0.9479,
+        "available_samples": 3482,
+        "sample_diff": 1965
+    },
+    "MOL2_Cavoliniidae": {
+        "num_samples": 195,
+        "Recall": 0.9455,
+        "Precision": 0.8966,
+        "available_samples": 1956,
+        "sample_diff": 1761
+    },
+    "CRP_nauplius": {
+        "num_samples": 435,
+        "Recall": 0.9839,
+        "Precision": 0.8592,
+        "available_samples": 4358,
+        "sample_diff": 0
+    },
+    "ECH3_Juvenile": {
+        "num_samples": 70,
+        "Recall": 0.95,
+        "Precision": 0.95,
+        "available_samples": 277,
+        "sample_diff": 207
+    },
+    "COP19_Pontellidae": {
+        "num_samples": 100,
+        "Recall": 0.9286,
+        "Precision": 1.0,
+        "available_samples": 1002,
+        "sample_diff": 902
+    },
+    "COP5_Candaciidae": {
+        "num_samples": 154,
+        "Recall": 0.8636,
+        "Precision": 0.8837,
+        "available_samples": 1542,
+        "sample_diff": 1388
+    },
+    "EGG_Actinopterygii": {
+        "num_samples": 251,
+        "Recall": 0.9859,
+        "Precision": 0.9211,
+        "available_samples": 2517,
+        "sample_diff": 165
+    },
+    "ECH1_Echinopluteus": {
+        "num_samples": 70,
+        "Recall": 1.0,
+        "Precision": 0.8696,
+        "available_samples": 490,
+        "sample_diff": 346
+    },
+    "CLD2_Penilia": {
+        "num_samples": 495,
+        "Recall": 0.9504,
+        "Precision": 0.563,
+        "available_samples": 4952,
+        "sample_diff": 1818
+    },
+    "nectophore2_Physonectae": {
+        "num_samples": 129,
+        "Recall": 0.973,
+        "Precision": 0.5714,
+        "available_samples": 1299,
+        "sample_diff": 287
+    },
+    "EUM6_Luciferidae": {
+        "num_samples": 70,
+        "Recall": 0.9,
+        "Precision": 1.0,
+        "available_samples": 355,
+        "sample_diff": 285
+    },
+    "COP7_Centropagidae": {
+        "num_samples": 341,
+        "Recall": 0.9897,
+        "Precision": 0.8,
+        "available_samples": 3414,
+        "sample_diff": 75
+    },
+    "MOL4_Gymnosomata": {
+        "num_samples": 70,
+        "Recall": 1.0,
+        "Precision": 0.8696,
+        "available_samples": 256,
+        "sample_diff": 186
+    },
+    "COP3_Augapilidae": {
+        "num_samples": 309,
+        "Recall": 0.9545,
+        "Precision": 0.8235,
+        "available_samples": 3097,
+        "sample_diff": 107
+    },
+    "EUM4_Gammaridea": {
+        "num_samples": 70,
+        "Recall": 0.9,
+        "Precision": 0.9474,
+        "available_samples": 225,
+        "sample_diff": 155
+    },
+    "COP2_Aetideidae": {
+        "num_samples": 70,
+        "Recall": 0.95,
+        "Precision": 0.8636,
+        "available_samples": 220,
+        "sample_diff": 150
+    },
+    "CRP_cypris": {
+        "num_samples": 70,
+        "Recall": 0.9,
+        "Precision": 0.4737,
+        "available_samples": 491,
+        "sample_diff": 421
+    },
+    "TUN3_Doliolida": {
+        "num_samples": 252,
+        "Recall": 0.9722,
+        "Precision": 0.5691,
+        "available_samples": 2521,
+        "sample_diff": 164
+    },
+    "EUM8_nauplius": {
+        "num_samples": 70,
+        "Recall": 0.95,
+        "Precision": 0.8261,
+        "available_samples": 578,
+        "sample_diff": 508
+    },
+    "larvae3_Hemichordata": {
+        "num_samples": 58,
+        "Recall": 0.9412,
+        "Precision": 0.9412,
+        "available_samples": 58,
+        "sample_diff": 0
+    },
+    "CPC_Branchiostoma": {
+        "num_samples": 70,
+        "Recall": 1.0,
+        "Precision": 1.0,
+        "available_samples": 147,
+        "sample_diff": 77
+    },
+    "larvae1_Bryozoa": {
+        "num_samples": 638,
+        "Recall": 0.989,
+        "Precision": 0.9278,
+        "available_samples": 6387,
+        "sample_diff": 0
+    },
+    "larvae2_Decapoda": {
+        "num_samples": 198,
+        "Recall": 1.0,
+        "Precision": 0.9825,
+        "available_samples": 1987,
+        "sample_diff": 218
+    },
+    "COP16_Oncaeidae": {
+        "num_samples": 893,
+        "Recall": 0.9255,
+        "Precision": 0.8339,
+        "available_samples": 8936,
+        "sample_diff": 1420
+    },
+    "larvae4_Mysida": {
+        "num_samples": 51,
+        "Recall": 0.9333,
+        "Precision": 1.0,
+        "available_samples": 51,
+        "sample_diff": 0
+    },
+    "EUM13_calyptopsis": {
+        "num_samples": 303,
+        "Recall": 0.9767,
+        "Precision": 0.9032,
+        "available_samples": 3032,
+        "sample_diff": 113
+    },
+    "COP21_Sapphirinidae": {
+        "num_samples": 103,
+        "Recall": 0.931,
+        "Precision": 0.4154,
+        "available_samples": 1032,
+        "sample_diff": 929
+    },
+    "COP6_Caligidae": {
+        "num_samples": 70,
+        "Recall": 1.0,
+        "Precision": 1.0,
+        "available_samples": 397,
+        "sample_diff": 327
+    },
+    "COP4_Calanidae": {
+        "num_samples": 1850,
+        "Recall": 0.9413,
+        "Precision": 0.9764,
+        "available_samples": 18509,
+        "sample_diff": 463
+    },
+    "COP15_Oithonidae": {
+        "num_samples": 4152,
+        "Recall": 0.9688,
+        "Precision": 0.9551,
+        "available_samples": 41522,
+        "sample_diff": 0
+    },
+    "COP18_Peltidiidae": {
+        "num_samples": 70,
+        "Recall": 0.95,
+        "Precision": 0.95,
+        "available_samples": 93,
+        "sample_diff": 23
+    }
+}

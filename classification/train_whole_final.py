@@ -44,7 +44,7 @@ def main():
     std = parser.get_transforms_normalize_std()
 
     # early stopping
-    for i in range(11, 14):
+    for i in range(1, 10):
         best_metric = float('-inf') if early_stopping_metric in ["accuracy", "balanced_accuracy"] else float('inf')
         best_model_weights = None
         patience = parser.get_patience()
@@ -55,11 +55,8 @@ def main():
         best_val_macro_avg_f1_score = float('-inf')
 
         checkpoint_path = os.path.join('checkpoints',
-                                        'swin_mixup_100', f"run_{i+1}") #,parser.get_model_name(),
-                                    #  datetime.now().strftime('%Y-%m-%d-%H-%M'))
+                                        'swin_mixup_100_full_contrastive', f"run_{i+1}") 
 
-        #if os.path.exists(checkpoint_path):
-        #   shutil.rmtree(checkpoint_path)
         if is_enable_report: #or is_checkpoint:
             os.makedirs(checkpoint_path, exist_ok=True)
 
@@ -124,7 +121,8 @@ def main():
 
         model.to(device)
         model = nn.DataParallel(model)
-        #model.load_state_dict(state_dict, strict=False)
+        checkpoint = torch.load("checkpoints/swin_contrastive_3/full_set/best_checkpoint.pth")
+        model.load_state_dict(checkpoint["model_state_dict"], strict=False)
         criterion = nn.CrossEntropyLoss()
         optimizer =  torch.optim.AdamW(model.parameters(), lr=1e-5, weight_decay=1e-8)
         scheduler = None

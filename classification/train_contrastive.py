@@ -181,7 +181,7 @@ def main():
     proj_head = ProjectionHead(embed_dim=1024, proj_dim=128).to(device)
     proj_head = nn.DataParallel(proj_head)
 
-    criterion = SupConLoss(temperature=0.07)
+    criterion = SupConLoss(temperature=0.1)
     optimizer = torch.optim.AdamW(list(model.parameters()) + list(proj_head.parameters()), lr=1e-5, weight_decay=1e-8)
 
     best_loss = float('inf')
@@ -209,7 +209,7 @@ def main():
         model.load_state_dict(best_model_weights[0])
         proj_head.load_state_dict(best_model_weights[1])
 
-    # Save the model and projection head if needed
+
     torch.save({
         'backbone': model.state_dict(),
         'projection_head': proj_head.state_dict()

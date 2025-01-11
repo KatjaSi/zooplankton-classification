@@ -19,3 +19,5 @@ output_clusters/
 *.db
 pretraining/optimize/storage/
 pretraining/optimize/storage/optuna_study_small.db
+*.png
+*.txt
